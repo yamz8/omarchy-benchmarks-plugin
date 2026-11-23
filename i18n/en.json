@@ -1,0 +1,47 @@
+{
+  "title": "Benchmarks",
+  "tooltip": "Model benchmarks",
+  "refresh": "Refresh from models.dev",
+  "previous": "Previous benchmark",
+  "next": "Next benchmark",
+  "status.loading": "Loading from %1",
+  "status.updated": "%1 · %2",
+  "status.saved": "Refresh failed · %2",
+  "status.failed": "Couldn't load benchmarks",
+  "age.now": "just now",
+  "age.minutes": {
+    "one": "%1 minute ago",
+    "other": "%1 minutes ago"
+  },
+  "age.hours": {
+    "one": "%1 hour ago",
+    "other": "%1 hours ago"
+  },
+  "age.days": {
+    "one": "%1 day ago",
+    "other": "%1 days ago"
+  },
+  "list.models": {
+    "one": "%1 model",
+    "other": "%1 models"
+  },
+  "list.position": "%1 of %2",
+  "empty.loading": "Loading…",
+  "empty.failed": "No benchmark data yet. Press R to try again.",
+  "row.open": "Open the source at %1",
+  "row.noSource": "No source given",
+  "view.list": "Show as a list",
+  "view.graph": "Show as a graph",
+  "chart.time": "Score by release date · the line is the best so far",
+  "chart.columns": "Top %1 of %2 results",
+  "group.other": "Other",
+  "chart.strips": "Every result, by the harness it ran in",
+  "list.mine": {
+    "one": "◆ %1 you use",
+    "other": "◆ %1 you use"
+  },
+  "chart.all": {
+    "one": "The only result",
+    "other": "All %1 results"
+  }
+}

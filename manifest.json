@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "id": "yamz8.benchmarks",
+  "name": "Benchmarks",
+  "version": "0.4.0",
+  "author": "yamz8",
+  "license": "MIT",
+  "description": "Model benchmark scores from models.dev, one benchmark at a time.",
+  "kinds": [
+    "bar-widget"
+  ],
+  "entryPoints": {
+    "barWidget": "Panel.qml"
+  },
+  "barWidget": {
+    "displayName": "Benchmarks",
+    "description": "Model benchmark scores from models.dev, fetched when the panel opens.",
+    "category": "Info",
+    "allowMultiple": false,
+    "defaultSection": "right",
+    "defaults": {
+      "view": "Graph"
+    },
+    "schema": [
+      {
+        "key": "view",
+        "type": "enum",
+        "label": "View",
+        "options": [
+          "Graph",
+          "List"
+        ],
+        "defaultValue": "Graph",
+        "description": "What the panel opens on. V switches between them while it's open."
+      }
+    ]
+  }
+}
