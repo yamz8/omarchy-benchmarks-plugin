@@ -32,11 +32,9 @@ Middle-click on the bar icon also refetches.
 
 ## Which benchmarks, and your models
 
-The benchmarks on offer are the eight that the most models report, plus up to six that the models you use are on. No benchmark is named in the code: when one falls out of use and another takes over, the lists follow the data. Different versions of a benchmark (Terminal-Bench 2.1 and 4.0) are separate lists, since they are different tests.
+The benchmarks on offer are the twelve that the most models report, the most widely reported first, so the panel opens on the ones people know. No benchmark is named in the code: when one falls out of use and another takes over, the lists follow the data. Different versions of a benchmark (Terminal-Bench 2.1 and 4.0) are separate lists, since they are different tests.
 
-The widest benchmarks are the long-established ones, and the newest models are often no longer reported on them, which is why yours get lists of their own. Those with more of your models come first, so the panel opens on the benchmark that says the most about what you run.
-
-The models you use are the ones in the agents panel's usage records (`~/.local/state/omarchy/agents/usage/`), matched to models.dev by name. They are read when the panel opens and never leave the machine. On a graph they are diamonds in the text color with their names beside them; in the list their rows carry a tint of the theme's accent color; and the line under the benchmark's name says how many of them it has. M steps the cursor through them.
+The models you use change neither which benchmarks are on offer nor their order; they are only marked. They are the ones in the agents panel's usage records (`~/.local/state/omarchy/agents/usage/`), matched to models.dev by name. They are read when the panel opens and never leave the machine. On a graph they are diamonds in the text color with their names beside them; in the list their rows carry a tint of the theme's accent color; and the line under the benchmark's name says how many of them it has. M steps the cursor through them.
 
 ## Graph and list
 

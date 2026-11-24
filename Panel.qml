@@ -21,9 +21,9 @@ Panel {
   // The models this machine has used, by Model.modelKey; read from the agents
   // panel's records each time the panel opens.
   property var used: ({})
-  // Which benchmarks come first depends on `used`, so nothing is listed
-  // until it has been read once; otherwise the first open would show one
-  // benchmark and then jump to another.
+  // Which results are marked depends on `used`, so nothing is listed until
+  // it has been read once; otherwise the first open would draw plain dots
+  // and then turn some of them into diamonds.
   property bool usedReady: false
   property double fetchedAt: 0
   property bool fetchError: false

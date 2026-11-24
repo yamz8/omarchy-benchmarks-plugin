@@ -131,26 +131,33 @@ test("age picks the unit the panel's plural strings take", () => {
   assert.deepEqual(Model.age(-5), { unit: "minutes", count: 0 })
 })
 
-test("a benchmark the models you use are on gets a list, ahead of the widest ones", () => {
+test("the models you use change neither which benchmarks get a list nor their order", () => {
   const used = Model.parseUsed('["mine-a","mine-b","mine-c"]')
   const mine = name => ["lab/mine-a", "lab/mine-b", "lab/mine-c"].map(id => model(id, [{ name, score: 70 }]))
   const others = (name, count, tag) => field(name, count).map(m => Object.assign(m, { id: m.id + tag }))
   const models = Model.parse(response([
     ...others("Old and wide", 30, "-w"),
-    // New: only nine models report it, three of them yours.
+    // Only nine models report it, though three of them are yours.
     ...mine("New"), ...others("New", 6, "-n"),
-    // Yours are on it, but with nothing much to compare them against.
-    ...mine("Tiny"), ...others("Tiny", 1, "-t"),
     // Wide, with one of yours.
     model("lab/mine-a", [{ name: "Wide with one", score: 70 }]), ...others("Wide with one", 15, "-o")
   ])).models
+  // Yours are counted, for the line under the benchmark's name, and no more.
   assert.deepEqual(Model.lists(models, used).map(l => [l.label, l.models, l.mine]), [
-    ["New", 9, 3],
-    ["Wide with one", 16, 1],
-    ["Old and wide", 30, 0]
+    ["Old and wide", 30, 0],
+    ["Wide with one", 16, 1]
   ])
-  // With no usage records it is the widest alone, as before.
   assert.deepEqual(Model.lists(models).map(l => l.label), ["Old and wide", "Wide with one"])
+})
+
+test("no more lists than the panel has room to step through", () => {
+  const benchmarks = []
+  for (let i = 0; i < Model.MAX_LISTS + 3; i++) benchmarks.push(...field("Bench " + String(i).padStart(2, "0"), Model.MIN_MODELS + i).map(m => Object.assign(m, { id: m.id + "-" + i })))
+  const labels = Model.lists(Model.parse(response(benchmarks)).models).map(l => l.label)
+  assert.equal(labels.length, Model.MAX_LISTS)
+  // The widest stay: the three with the fewest models are the ones left out.
+  assert.equal(labels[0], "Bench " + String(Model.MAX_LISTS + 2).padStart(2, "0"))
+  assert.equal(labels.includes("Bench 02"), false)
 })
 
 // ---- The graph: its form follows how the benchmark is built.

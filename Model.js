@@ -14,16 +14,9 @@ var MAX_AGE_SECONDS = 86400
 var MAX_MODELS = 2000
 var MAX_ENTRIES_PER_MODEL = 80
 var MAX_ROWS = 120
-var MAX_LISTS = 8
+var MAX_LISTS = 12
 // A benchmark few models report is no leaderboard; this many earns it a list.
 var MIN_MODELS = 12
-// The widest benchmarks are the long-established ones, which the newest
-// models are often no longer reported on. So a benchmark also earns a list
-// when at least this many of the models you use are on it, with this many
-// models to compare them against; up to this many such lists are added.
-var MIN_MINE = 2
-var MIN_MODELS_WITH_MINE = 5
-var MAX_MINE_LISTS = 6
 
 // Fetches into the cache when it is stale (or when forced), then prints the
 // models that have scores as one JSON object. The URL, age and force flag
@@ -178,10 +171,12 @@ function parse(text) {
   return { ok: true, fetchedAt: fetchedAt, fetchError: data.fetchError === true, models: models }
 }
 
-// The benchmarks worth a list: the ones the most models report, and the ones
-// the models you use are on (`used`, from parseUsed). Those with more of your
-// models come first, then the widest. Nothing here names a benchmark: when
-// one falls out of use and another takes over, the lists follow the data.
+// The benchmarks worth a list: the ones the most models report, the most
+// widely reported first, so the panel shows the benchmarks people know. The
+// models you use (`used`, from parseUsed) change neither which these are nor
+// their order; they are only counted, for the line under a benchmark's name.
+// Nothing here names a benchmark: when one falls out of use and another takes
+// over, the lists follow the data.
 function lists(models, used) {
   var byKey = {}
   for (var i = 0; i < models.length; i++) {
@@ -209,16 +204,7 @@ function lists(models, used) {
 
   var wide = all.filter(function(list) { return list.models >= MIN_MODELS })
   if (wide.length === 0) wide = all.filter(function(list) { return list.models >= 2 })
-  var chosen = wide.slice(0, MAX_LISTS)
-
-  var personal = all.filter(function(list) {
-    return list.mine >= MIN_MINE && list.models >= MIN_MODELS_WITH_MINE && chosen.indexOf(list) < 0
-  })
-  personal.sort(function(a, b) { return b.mine - a.mine || b.models - a.models || byLabel(a, b) })
-  chosen = chosen.concat(personal.slice(0, MAX_MINE_LISTS))
-
-  chosen.sort(function(a, b) { return b.mine - a.mine || b.models - a.models || byLabel(a, b) })
-  return chosen
+  return wide.slice(0, MAX_LISTS)
 }
 
 function median(values) {
