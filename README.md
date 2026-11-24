@@ -36,7 +36,7 @@ The benchmarks on offer are the eight that the most models report, plus up to si
 
 The widest benchmarks are the long-established ones, and the newest models are often no longer reported on them, which is why yours get lists of their own. Those with more of your models come first, so the panel opens on the benchmark that says the most about what you run.
 
-The models you use are the ones in the agents panel's usage records (`~/.local/state/omarchy/agents/usage/`), matched to models.dev by name. They are read when the panel opens and never leave the machine. On a graph they are diamonds in the text color with their names beside them; in the list they carry the same diamond; and the line under the benchmark's name says how many of them it has. M steps the cursor through them.
+The models you use are the ones in the agents panel's usage records (`~/.local/state/omarchy/agents/usage/`), matched to models.dev by name. They are read when the panel opens and never leave the machine. On a graph they are diamonds in the text color with their names beside them; in the list their rows carry a tint of the theme's accent color; and the line under the benchmark's name says how many of them it has. M steps the cursor through them.
 
 ## Graph and list
 

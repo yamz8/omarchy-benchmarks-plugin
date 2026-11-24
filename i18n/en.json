@@ -41,5 +41,9 @@
   "list.mine": {
     "one": "◆ %1 you use",
     "other": "◆ %1 you use"
+  },
+  "list.mineTinted": {
+    "one": "%1 you use",
+    "other": "%1 you use"
   }
 }

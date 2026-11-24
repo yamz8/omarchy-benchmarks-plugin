@@ -472,7 +472,7 @@ Panel {
                 text: root.currentList
                   ? strings.tn("list.models", root.currentList.models).arg(Commons.I18n.formatNumber(root.currentList.models))
                     + " · " + strings.t("list.position").arg(Commons.I18n.formatNumber(root.listIndex + 1)).arg(Commons.I18n.formatNumber(root.lists.length))
-                    + (root.mineCount > 0 ? " · " + strings.tn("list.mine", root.mineCount).arg(Commons.I18n.formatNumber(root.mineCount)) : "")
+                    + (root.mineCount > 0 ? " · " + strings.tn(root.chartShown ? "list.mine" : "list.mineTinted", root.mineCount).arg(Commons.I18n.formatNumber(root.mineCount)) : "")
                   : ""
                 color: root.dim
                 font.family: root.fontFamily
@@ -574,6 +574,15 @@ Panel {
                   hasCursor: root.cursorActive && root.selectedIndex === index
                   implicitHeight: rowContent.implicitHeight + Style.space(12)
 
+                  // A model you use: its row carries a tint of the accent,
+                  // under the cursor too, so it stays told apart there.
+                  Rectangle {
+                    anchors.fill: parent
+                    radius: Style.cornerRadius
+                    visible: scoreRow.modelData.mine
+                    color: Util.alpha(Commons.Color.accent, 0.12)
+                  }
+
                   MouseArea {
                     id: rowMouse
                     anchors.fill: parent
@@ -614,8 +623,7 @@ Panel {
                       Text {
                         textFormat: Text.PlainText
                         Layout.fillWidth: true
-                        // The same diamond the graph draws for a model you use.
-                        text: (scoreRow.modelData.mine ? "\u25c6 " : "") + scoreRow.modelData.name
+                        text: scoreRow.modelData.name
                         color: root.foreground
                         font.family: root.fontFamily
                         font.pixelSize: Style.font.body
