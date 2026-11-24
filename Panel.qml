@@ -381,14 +381,14 @@ Panel {
               Row {
                 spacing: Style.space(6)
 
-                HeroButton {
+                CornerButton {
                   glyph: root.graphView ? "󰉻" : "󰄨"
                   tooltip: root.graphView ? strings.t("view.list") : strings.t("view.graph")
                   fontFamily: root.fontFamily
                   onClicked: root.toggleView()
                 }
 
-                HeroButton {
+                CornerButton {
                   glyph: "󰑐"
                   tooltip: strings.t("refresh")
                   fontFamily: root.fontFamily
@@ -409,7 +409,7 @@ Panel {
             width: parent.width
             implicitHeight: Math.max(previousButton.implicitHeight, listLabels.implicitHeight)
 
-            HeroButton {
+            CornerButton {
               id: previousButton
               visible: root.lists.length > 1
               anchors.left: parent.left
@@ -457,7 +457,7 @@ Panel {
               }
             }
 
-            HeroButton {
+            CornerButton {
               id: nextButton
               visible: root.lists.length > 1
               anchors.right: parent.right

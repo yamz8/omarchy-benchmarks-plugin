@@ -12,7 +12,7 @@ The scores are [models.dev](https://models.dev)'s (MIT), which records for each 
 omarchy plugin add https://github.com/yamz8/omarchy-benchmarks-plugin.git --enable
 ```
 
-It needs nothing beyond what Omarchy ships (`curl` and `jq`). Remove it with `omarchy plugin remove yamz8.benchmarks`.
+It needs Omarchy 4.5 or later, and nothing beyond what Omarchy ships (`curl` and `jq`). Remove it with `omarchy plugin remove yamz8.benchmarks`.
 
 ## Using it
 
