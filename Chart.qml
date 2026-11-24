@@ -23,10 +23,9 @@ Item {
   property color dim: Qt.darker(foreground, 1.55)
   property string fontFamily: Style.font.family
   property string otherLabel: ""
-  // What the two axes measure and what the line is, worded by the panel.
+  // What the two axes measure, worded by the panel.
   property string valueTitle: ""
   property string baseTitle: ""
-  property string bestLabel: ""
   // The result under the cursor, worded by the panel: its name and score,
   // and what the score was reported with.
   property string tipTitle: ""
@@ -80,8 +79,8 @@ Item {
   // name without the first one running off the left edge.
   readonly property bool slanted: columns && plotWidth / Math.max(1, spec.items.length) < Style.space(70)
   readonly property real nameLength: Style.space(124)
-  // The row the value axis's title and the key share, and the one the other
-  // axis's title has under its labels when it has a title.
+  // The row the value axis's title has above the graph, and the one the
+  // other axis's title has under its labels when it has a title.
   readonly property real titleRow: lineHeight + Style.space(10)
   readonly property real baseTitleRow: baseTitle !== "" ? lineHeight + Style.space(8) : 0
   readonly property real plotX: gutter
@@ -117,42 +116,18 @@ Item {
     onHoveredChanged: if (!hovered) root.pointerLeft()
   }
 
-  // ---- What the graph shows: the value axis's title over its numbers, a
-  // key for the line opposite it, and the other axis's title along the
-  // bottom.
+  // ---- What the graph shows: the value axis's title over its numbers, and
+  // the other axis's title along the bottom.
   Text {
     textFormat: Text.PlainText
     x: 0
     y: 0
-    width: Math.max(0, root.width - (key.visible ? key.width + Style.space(18) : 0))
+    width: root.width
     text: root.valueTitle
     color: root.titleColor
     font.family: root.fontFamily
     font.pixelSize: Style.font.caption
     elide: Text.ElideRight
-  }
-
-  Row {
-    id: key
-    visible: root.time && root.bestLabel !== ""
-    x: root.width - width - Style.space(6)
-    y: 0
-    spacing: Style.space(6)
-
-    Rectangle {
-      anchors.verticalCenter: parent.verticalCenter
-      width: Style.space(14)
-      height: 2
-      color: Commons.Color.accent
-    }
-
-    Text {
-      textFormat: Text.PlainText
-      text: root.bestLabel
-      color: root.dim
-      font.family: root.fontFamily
-      font.pixelSize: Style.font.caption
-    }
   }
 
   Text {

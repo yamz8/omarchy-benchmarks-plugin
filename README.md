@@ -51,7 +51,7 @@ Every graph names its axes, and no more than that:
 - **Top left: what the scores are**, in the words their sources use for the metric (accuracy, resolve rate, Elo). Results on one benchmark don't always agree on the wording, so where no single one covers two thirds of them, the two commonest are named.
 - **Along the bottom: what the other axis is**, where it needs saying. The model's release date, the harness the model ran in, or that only the top twelve results are on show. Models named under their own columns need no title.
 
-On a graph over time, the line is the best score so far, as the key beside the title says. A diamond is a model you use.
+On a graph over time, the line is the best score so far. A diamond is a model you use.
 
 Point at a result, or step through them best first with Up and Down, and a card says which one it is and what its score was reported with, including its own metric where the benchmark's results name more than one. The card sits beside a dot, and at the foot of a column so that it covers no other column's score. Enter or a click opens its source, as in the list.
 

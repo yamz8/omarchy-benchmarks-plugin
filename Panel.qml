@@ -484,7 +484,6 @@ Panel {
           otherLabel: strings.t("group.other")
           valueTitle: root.valueTitle
           baseTitle: root.baseTitle
-          bestLabel: strings.t("key.best")
           tipTitle: root.tipTitle
           tipDetail: root.tipDetail
           onPointerLeft: root.cursorActive = false
