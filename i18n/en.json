@@ -34,6 +34,7 @@
   "chart.dated": "Model release date · %1 of %2 results have one",
   "chart.scoreAs": "%1 %2",
   "axis.score": "Score",
+  "axis.lower": "%1 · lower is better",
   "axis.time": "Model release date",
   "axis.strips": "Harness the model ran in",
   "key.best": "best so far",

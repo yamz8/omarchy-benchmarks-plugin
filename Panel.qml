@@ -75,18 +75,30 @@ Panel {
   readonly property var cursorRow: chartShown && cursorActive && selectedIndex < rows.length ? rows[selectedIndex] : null
   readonly property string tipTitle: {
     if (cursorRow === null) return ""
-    // Where the results don't all name one metric, the score says its own.
+    // Where the results don't all name one metric, the score says its own,
+    // unless all its source called it was "score".
     var score = Commons.I18n.formatNumber(cursorRow.score, cursorRow.decimals)
-    return cursorRow.name + " · " + (chart.metrics.length > 1 && cursorRow.metric !== "" ? strings.t("chart.scoreAs").arg(score).arg(cursorRow.metric) : score)
+    var named = chart.metrics.length > 1 && cursorRow.metric !== "" && cursorRow.metric.toLowerCase() !== "score"
+    return cursorRow.name + " · " + (named ? strings.t("chart.scoreAs").arg(score).arg(cursorRow.metric) : score)
   }
-  readonly property string tipDetail: cursorRow !== null ? rowSummary(cursorRow) : ""
+  readonly property string tipDetail: {
+    if (cursorRow === null) return ""
+    var parts = rowParts(cursorRow)
+    var host = Model.urlHost(cursorRow.source)
+    if (host !== "") parts.push(host)
+    return parts.join(" · ")
+  }
 
   // The value axis's title: the metric in its sources' words, or just "Score"
   // where they name none.
   readonly property string valueTitle: {
-    if (chart.metrics.length === 0) return strings.t("axis.score")
-    var text = chart.metrics.join(", ")
-    return text.charAt(0).toUpperCase() + text.slice(1)
+    var text = strings.t("axis.score")
+    if (chart.metrics.length > 0) {
+      text = chart.metrics.join(", ")
+      text = text.charAt(0).toUpperCase() + text.slice(1)
+    }
+    // The graphs are read as higher is better unless one says otherwise.
+    return chart.lower ? strings.t("axis.lower").arg(text) : text
   }
   // The other axis's: dates and harnesses need saying, and so does a graph
   // that shows only the top results. Models named under their columns don't.
@@ -226,7 +238,8 @@ Panel {
     })
   }
 
-  function rowDetail(row) {
+  // What a score was reported with: the harness, the settings and the date.
+  function rowParts(row) {
     var parts = []
     if (row.harness !== "") parts.push(row.harness)
     if (row.variant !== "") parts.push(row.variant)
@@ -234,6 +247,11 @@ Panel {
       var bits = row.date.split("-")
       parts.push(new Date(Number(bits[0]), Number(bits[1]) - 1, Number(bits[2])).toLocaleDateString(Qt.locale(Commons.I18n.formatLocale), Locale.ShortFormat))
     }
+    return parts
+  }
+
+  function rowDetail(row) {
+    var parts = rowParts(row)
     return parts.length > 0 ? parts.join(" · ") : row.metric
   }
 

@@ -4,7 +4,7 @@ An [Omarchy](https://omarchy.org) shell plugin: a bar icon that opens a panel of
 
 ![The Benchmarks panel showing three kinds of graph](preview.png)
 
-The scores are [models.dev](https://models.dev)'s (MIT), which records for each one the page it was taken from. The plugin only fetches, checks and shows them. It computes no ranking of its own: every reported result is shown, sorted by score, with the harness, settings and date it was reported with.
+The scores are [models.dev](https://models.dev)'s (MIT), which records for each one the page it was taken from. The plugin only fetches, checks and shows them. It computes no ranking of its own: every reported result that can be compared is shown, best first, with the harness, settings and date it was reported with.
 
 ## Install
 
@@ -53,7 +53,7 @@ Every graph names its axes, and no more than that:
 
 On a graph over time, the line is the best score so far, as the key beside the title says. A diamond is a model you use.
 
-Point at a result, or step through them best first with Up and Down, and a card beside its mark says which one it is and what its score was reported with, including its own metric where the benchmark's results name more than one. Enter or a click opens its source, as in the list.
+Point at a result, or step through them best first with Up and Down, and a card says which one it is and what its score was reported with, including its own metric where the benchmark's results name more than one. The card sits beside a dot, and at the foot of a column so that it covers no other column's score. Enter or a click opens its source, as in the list.
 
 V switches to the list, which has every result with its details, for as long as the shell runs. To open on the list every time:
 
@@ -68,6 +68,14 @@ One request, to `https://models.dev/models.json`, and only when the panel is ope
 ## Reading the scores
 
 Most are reported by the model's own maker, and the same model can score differently in different harnesses or at different effort settings, which is why those are on each row. Enter on a row shows where its number came from.
+
+A result is left out only where ranking it with the rest would be wrong:
+
+- **Another scale.** A win rate among Elo ratings, say.
+- **A second metric for the same run.** Some models report one run under two metrics, such as OSWorld's partial score and its stricter completion rate. Those are two measurements, so they can't share an axis. The one more models report stays; where that is a tie, the one closer to the benchmark's other results does.
+- **A metric that runs the other way.** A stray error rate on a benchmark scored by accuracy.
+
+Where a benchmark's own metric says less is better (an edit distance, an error rate), the lowest score comes first, the line follows the lowest so far, and the graph's title says so. Nothing in the data says which way a metric runs, so this is read from a few words in its name, and any other metric is taken as higher is better.
 
 ## Tests
 

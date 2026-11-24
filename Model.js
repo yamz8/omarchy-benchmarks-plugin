@@ -226,12 +226,95 @@ function median(values) {
   return sorted.length === 0 ? 0 : sorted[Math.floor(sorted.length / 2)]
 }
 
-// Every score reported for one benchmark, highest first. A model run in
+// Which way a metric runs. The data has no field for it, so the few words
+// that leave no doubt are read from the metric's name; every other metric is
+// taken as more is better.
+var LOWER_IS_BETTER = /\b(error|errors|distance|loss|perplexity)\b|\bhallucination rate\b/i
+
+function lowerIsBetter(metric) {
+  return LOWER_IS_BETTER.test(String(metric || ""))
+}
+
+// A model that reports one run (same harness, same settings) under two
+// metrics with two scores has measured two things, not named one thing
+// twice, and the two can't share an axis. One such run could be a slip in the
+// data, so it takes this many before any result is left out.
+var MIN_CLASH_RUNS = 2
+
+// The metrics to leave out of a benchmark whose results measure two things,
+// as lower-case names. Each metric takes the side opposite the ones it was
+// reported against ("partial score" against "strict success rate", "mean
+// partial score" against "binary completion rate"), the side with more
+// results stays, and on a tie the one nearer the results that took no side.
+function sideMetrics(rows) {
+  var runs = Object.create(null)
+  var counts = Object.create(null)
+  for (var i = 0; i < rows.length; i++) {
+    var metric = rows[i].metric.toLowerCase()
+    if (metric === "") continue
+    counts[metric] = (counts[metric] || 0) + 1
+    var run = rows[i].id + "\n" + harnessKey(rows[i].harness) + "\n" + rows[i].variant.toLowerCase()
+    if (!runs[run]) runs[run] = Object.create(null)
+    if (!(metric in runs[run])) runs[run][metric] = rows[i].score
+  }
+
+  var against = Object.create(null)
+  var clashes = 0
+  for (var key in runs) {
+    var names = Object.keys(runs[key])
+    var clashed = false
+    for (var a = 0; a < names.length; a++) {
+      for (var b = a + 1; b < names.length; b++) {
+        if (runs[key][names[a]] === runs[key][names[b]]) continue
+        if (!against[names[a]]) against[names[a]] = Object.create(null)
+        if (!against[names[b]]) against[names[b]] = Object.create(null)
+        against[names[a]][names[b]] = true
+        against[names[b]][names[a]] = true
+        clashed = true
+      }
+    }
+    if (clashed) clashes++
+  }
+  var out = Object.create(null)
+  if (clashes < MIN_CLASH_RUNS) return out
+
+  // The commonest metric takes the first side, and each one after it the
+  // first side none of the metrics it was reported against has taken.
+  var order = Object.keys(against).sort(function(x, y) { return counts[y] - counts[x] || (x < y ? -1 : 1) })
+  var side = Object.create(null)
+  var sides = []
+  order.forEach(function(name) {
+    var at = 0
+    while (order.some(function(other) { return against[name][other] === true && side[other] === at })) at++
+    side[name] = at
+    if (!sides[at]) sides[at] = { count: 0, scores: [] }
+    sides[at].count += counts[name]
+  })
+
+  var apart = []
+  for (var j = 0; j < rows.length; j++) {
+    var at = side[rows[j].metric.toLowerCase()]
+    if (at === undefined) apart.push(rows[j].score)
+    else sides[at].scores.push(rows[j].score)
+  }
+  var keep = 0
+  for (var k = 1; k < sides.length; k++) {
+    var closer = apart.length > 0 && Math.abs(median(sides[k].scores) - median(apart)) < Math.abs(median(sides[keep].scores) - median(apart))
+    if (sides[k].count > sides[keep].count || (sides[k].count === sides[keep].count && closer)) keep = k
+  }
+  order.forEach(function(name) { if (side[name] !== keep) out[name] = true })
+  return out
+}
+
+// Every score reported for one benchmark, best first. A model run in
 // several harnesses or settings keeps a row for each, since those are
 // different results and choosing one would be a ranking of our own. `used`
-// (from parseUsed) marks the models this machine has used. The odd
-// score on another scale (a win rate among Elo ratings) is left out, because
-// sorting it in would be wrong.
+// (from parseUsed) marks the models this machine has used. Results that
+// can't be sorted in with the rest are left out, because ranking them would
+// be wrong: the odd score on another scale (a win rate among Elo ratings), a
+// second metric the same runs were also reported under, and a metric that
+// runs the other way from the benchmark's own. Each row's `lower` says
+// whether less is better on this benchmark.
 function rows(models, key, used) {
   var out = []
   for (var i = 0; i < models.length; i++) {
@@ -260,11 +343,19 @@ function rows(models, key, used) {
 
   var large = median(out.map(function(row) { return row.score })) > 100
   out = out.filter(function(row) { return (row.score > 100) === large })
-  out.sort(function(a, b) { return b.score - a.score || (a.name < b.name ? -1 : a.name > b.name ? 1 : 0) })
+
+  var aside = sideMetrics(out)
+  out = out.filter(function(row) { return aside[row.metric.toLowerCase()] !== true })
+
+  var lower = out.filter(function(row) { return lowerIsBetter(row.metric) }).length * 2 > out.length
+  out = out.filter(function(row) { return lowerIsBetter(row.metric) === lower })
+
+  out.sort(function(a, b) { return (lower ? a.score - b.score : b.score - a.score) || (a.name < b.name ? -1 : a.name > b.name ? 1 : 0) })
   out = out.slice(0, MAX_ROWS)
   for (var k = 0; k < out.length; k++) {
     out[k].rank = k + 1
     out[k].decimals = large ? 0 : 1
+    out[k].lower = lower
   }
   return out
 }
@@ -376,7 +467,8 @@ function valueAxis(low, high, fromZero) {
 // zero, or with fromZero false, dots on an axis that keeps to the scores.
 function columnsChart(rows, fromZero) {
   var shown = rows.slice(0, MAX_COLUMNS)
-  var axis = valueAxis(shown[shown.length - 1].score, shown[0].score, fromZero)
+  var ends = [shown[0].score, shown[shown.length - 1].score]
+  var axis = valueAxis(Math.min.apply(null, ends), Math.max.apply(null, ends), fromZero)
   var items = []
   var order = []
   for (var i = 0; i < shown.length; i++) {
@@ -449,14 +541,16 @@ function timeChart(rows, dated) {
   var scores = dated.map(function(index) { return rows[index].score })
   var axis = valueAxis(Math.min.apply(null, scores), Math.max.apply(null, scores), false)
 
-  // The best score so far, walking forward in time.
+  // The best score so far, walking forward in time: the highest, or the
+  // lowest on a benchmark where less is better.
+  var lower = rows[0].lower === true
   var byTime = dated.map(function(index, position) { return { row: index, day: days[position], score: rows[index].score } })
-  byTime.sort(function(a, b) { return a.day - b.day || b.score - a.score })
-  var best = -Infinity
+  byTime.sort(function(a, b) { return a.day - b.day || (lower ? a.score - b.score : b.score - a.score) })
+  var best = lower ? Infinity : -Infinity
   var records = {}
   var steps = []
   for (var i = 0; i < byTime.length; i++) {
-    if (byTime[i].score <= best) continue
+    if (lower ? byTime[i].score >= best : byTime[i].score <= best) continue
     best = byTime[i].score
     records[byTime[i].row] = true
     steps.push({ row: byTime[i].row, x: (byTime[i].day - start) / (end - start), y: (best - axis.min) / (axis.max - axis.min) })
@@ -527,16 +621,17 @@ function shapedChart(rows) {
     var days = dated.map(function(index) { return dayNumber(rows[index].when) })
     if (Math.max.apply(null, days) - Math.min.apply(null, days) >= TIME_MIN_DAYS) return timeChart(rows, dated)
   }
-  return columnsChart(rows, rows[0].score <= 100)
+  return columnsChart(rows, Math.max(rows[0].score, rows[rows.length - 1].score) <= 100)
 }
 
 // The graph for one benchmark's rows, with `metrics` naming what the results
-// drawn on it measure.
+// drawn on it measure and `lower` saying whether less is better.
 function chart(rows) {
-  if (!rows || rows.length === 0) return { form: "", axis: null, items: [], order: [], total: 0, strips: [], steps: [], xTicks: [], metrics: [] }
+  if (!rows || rows.length === 0) return { form: "", axis: null, items: [], order: [], total: 0, strips: [], steps: [], xTicks: [], metrics: [], lower: false }
 
   var spec = shapedChart(rows)
   spec.metrics = metricNames(spec.order.map(function(index) { return rows[index] }))
+  spec.lower = rows[0].lower === true
   return spec
 }
 

@@ -300,6 +300,87 @@ test("the value axis is titled with the metric most results name", () => {
   assert.deepEqual(Model.chart([]).metrics, [])
 })
 
+// The rows of a benchmark whose models each report the given results.
+function benchRows(models) {
+  const parsed = Model.parse(response(Object.entries(models).map(([id, results]) =>
+    model("lab/" + id, results.map(result => Object.assign({ name: "Bench" }, result)))))).models
+  return Model.rows(parsed, parsed[0].entries[0].key)
+}
+
+test("a second metric the same runs were also reported under is left out", () => {
+  // Three models give a lenient and a strict number for one run; three more
+  // give one number, under another name for the lenient one.
+  const rows = benchRows({
+    a: [{ score: 78, metric: "mean partial score", variant: "max" }, { score: 39, metric: "binary completion rate", variant: "max" }],
+    b: [{ score: 72, metric: "mean partial score", variant: "max" }, { score: 34, metric: "binary completion rate", variant: "max" }],
+    c: [{ score: 69, metric: "mean partial score", variant: "max" }, { score: 33, metric: "binary completion rate", variant: "max" }],
+    d: [{ score: 89, metric: "partial score" }],
+    e: [{ score: 80, metric: "partial score" }],
+    f: [{ score: 72, metric: "partial score" }]
+  })
+  assert.deepEqual(rows.map(row => row.score), [89, 80, 78, 72, 72, 69])
+  assert.ok(rows.every(row => row.metric !== "binary completion rate"))
+})
+
+test("metrics reported against each other take opposite sides, and the fuller side stays", () => {
+  // "partial score" and "mean partial score" never meet in one run, but each
+  // is reported against a strict metric, and one of those against both.
+  const rows = benchRows({
+    a: [{ score: 77, metric: "partial score" }, { score: 41, metric: "strict success rate" }],
+    b: [{ score: 66, metric: "mean partial score" }, { score: 32, metric: "binary completion rate" }],
+    c: [{ score: 52, metric: "partial score" }, { score: 19, metric: "binary completion rate" }],
+    d: [{ score: 81, metric: "partial score" }],
+    e: [{ score: 60, metric: "success rate" }]
+  })
+  assert.deepEqual(rows.map(row => row.metric), ["partial score", "partial score", "mean partial score", "success rate", "partial score"])
+})
+
+test("one doubled run, or one number under two names, leaves nothing out", () => {
+  const once = benchRows({
+    a: [{ score: 70, metric: "pass@1" }, { score: 64, metric: "success rate" }],
+    b: [{ score: 60, metric: "pass@1" }],
+    c: [{ score: 50, metric: "success rate" }]
+  })
+  assert.equal(once.length, 4)
+
+  const renamed = benchRows({
+    a: [{ score: 70, metric: "pass@1" }, { score: 70, metric: "success rate" }],
+    b: [{ score: 60, metric: "pass@1" }, { score: 60, metric: "success rate" }]
+  })
+  assert.equal(renamed.length, 4)
+
+  // Two harnesses are two runs, whatever their metrics are called.
+  const harnesses = benchRows({
+    a: [{ score: 70, metric: "pass@1", harness: "Codex" }, { score: 64, metric: "success rate", harness: "Claude Code" }],
+    b: [{ score: 60, metric: "pass@1", harness: "Codex" }, { score: 55, metric: "success rate", harness: "Claude Code" }]
+  })
+  assert.equal(harnesses.length, 4)
+})
+
+test("a benchmark where less is better ranks and tracks its best the other way up", () => {
+  const months = ["2025-01-10", "2025-04-10", "2025-07-10", "2025-10-10", "2026-01-10", "2026-04-10", "2026-07-10", "2026-10-10"]
+  const scores = [0.9, 0.7, 0.8, 0.5, 0.6, 0.3, 0.4, 0.2]
+  const parsed = Model.parse(response(scores.map((score, i) => ({
+    id: "lab/d" + i, name: "Model " + i, released: months[i],
+    benchmarks: [{ name: "Bench", score, metric: "overall edit distance" }]
+  })).concat([model("lab/odd", [{ name: "Bench", score: 0.95, metric: "accuracy" }])]))).models
+  const rows = Model.rows(parsed, parsed[0].entries[0].key)
+  // The lowest is first, and the one result that runs the other way is gone.
+  assert.deepEqual(rows.map(row => row.score), [0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9])
+  assert.equal(rows[0].rank, 1)
+
+  const chart = Model.chart(rows)
+  assert.equal(chart.form, "time")
+  assert.equal(chart.lower, true)
+  // Each record is lower than the one before it.
+  assert.deepEqual(chart.steps.map(step => rows[step.row].score), [0.9, 0.7, 0.5, 0.3, 0.2])
+
+  // A stray lower-is-better result doesn't turn a benchmark over.
+  const usual = benchRows({ a: [{ score: 80, metric: "accuracy" }], b: [{ score: 70, metric: "accuracy" }], c: [{ score: 5, metric: "error rate" }] })
+  assert.deepEqual(usual.map(row => row.score), [80, 70])
+  assert.equal(Model.chart(usual).lower, false)
+})
+
 test("an impossible date is no date", () => {
   const parsed = Model.parse(response([
     Object.assign(model("lab/a", [{ name: "Bench", score: 1, date: "2026-13-40" }]), { released: "0000-00-00" }),
