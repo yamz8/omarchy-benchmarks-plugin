@@ -89,12 +89,14 @@ Panel {
     return parts.join(" · ")
   }
 
-  // The value axis's title: the metric in its sources' words, or just "Score"
-  // where they name none.
+  // The value axis's title: the metric in the words most of its sources use,
+  // or just "Score" where they name none. One name, even where the sources
+  // use several: two read as two measurements. The card gives each result's
+  // own.
   readonly property string valueTitle: {
     var text = strings.t("axis.score")
     if (chart.metrics.length > 0) {
-      text = chart.metrics.join(", ")
+      text = chart.metrics[0]
       text = text.charAt(0).toUpperCase() + text.slice(1)
     }
     // The graphs are read as higher is better unless one says otherwise.

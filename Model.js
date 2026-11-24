@@ -409,6 +409,7 @@ var MAX_LABELS = 6
 // any.
 var METRIC_SHARE = 2 / 3
 var MAX_METRICS = 2
+var NO_LETTER = /^[^a-z\u00c0-\uffff]*$/i
 
 // "Terminus-2" and "Terminus 2" are one harness, and so are "Claude Code"
 // and "Claude Code 2.1.207".
@@ -593,7 +594,8 @@ function metricNames(rows) {
   var named = 0
   for (var i = 0; i < rows.length; i++) {
     var key = String(rows[i].metric || "").toLowerCase()
-    if (key === "" || key === "score") continue
+    // A metric given only as a sign ("%") names nothing either.
+    if (key === "" || key === "score" || NO_LETTER.test(key)) continue
     named++
     if (!byKey[key]) byKey[key] = { name: rows[i].metric, count: 0 }
     byKey[key].count++

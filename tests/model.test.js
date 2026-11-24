@@ -291,6 +291,8 @@ test("the value axis is titled with the metric most results name", () => {
   assert.deepEqual(named(["pass@1", "success rate", "pass@1", "success rate", "pass@1", "accuracy"]), ["pass@1", "success rate"])
   assert.deepEqual(named(["a", "b", "c", "d"]), ["a", "b"])
   assert.deepEqual(named(["score", "", "score"]), [])
+  // A bare sign is no name for an axis.
+  assert.deepEqual(named(["%", "%", "pass@1"]), ["pass@1"])
   // A metric named like an object's own machinery is only a name.
   assert.deepEqual(named(["constructor", "__proto__", "constructor"]), ["constructor"])
 
