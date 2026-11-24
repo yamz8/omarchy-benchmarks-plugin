@@ -496,7 +496,7 @@ test("a failed or malformed refresh keeps the cached copy and reports the error"
   const garbage = runFetch(cacheHome, { curl: curlWriting("<html>not json</html>"), force: "1" })
   assert.equal(garbage.fetchError, true)
   assert.equal(garbage.models.length, 1)
-  assert.deepEqual(fs.readdirSync(path.join(cacheHome, "yamz8.benchmarks")), ["models.json"])
+  assert.deepEqual(fs.readdirSync(path.join(cacheHome, "yamz8.model-benchmarks")), ["models.json"])
   fs.rmSync(cacheHome, { recursive: true })
 })
 

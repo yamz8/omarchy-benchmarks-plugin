@@ -2,21 +2,21 @@
 
 An [Omarchy](https://omarchy.org) shell plugin: a bar icon that opens a panel of AI model benchmark scores, one benchmark at a time, as a graph or a list, with the models you use marked.
 
-![The Benchmarks panel showing three kinds of graph](preview.png)
+![The Model Benchmarks panel showing three kinds of graph](preview.png)
 
 The scores are [models.dev](https://models.dev)'s (MIT), which records for each one the page it was taken from. The plugin only fetches, checks and shows them. It computes no ranking of its own: every reported result that can be compared is shown, best first, with the harness, settings and date it was reported with.
 
 ## Install
 
 ```bash
-omarchy plugin add https://github.com/yamz8/omarchy-benchmarks-plugin.git --enable
+omarchy plugin add https://github.com/yamz8/omarchy-model-benchmarks.git --enable
 ```
 
-It needs Omarchy 4.5 or later, and nothing beyond what Omarchy ships (`curl` and `jq`). Remove it with `omarchy plugin remove yamz8.benchmarks`.
+It needs Omarchy 4.5 or later, and nothing beyond what Omarchy ships (`curl` and `jq`). Remove it with `omarchy plugin remove yamz8.model-benchmarks`.
 
 ## Using it
 
-Click the podium icon in the bar, or bind a key to `omarchy-shell shell toggle yamz8.benchmarks`, which opens it on the display you are on.
+Click the podium icon in the bar, or bind a key to `omarchy-shell shell toggle yamz8.model-benchmarks`, which opens it on the display you are on.
 
 | Key | Does |
 |---|---|
@@ -58,12 +58,12 @@ Point at a result, or step through them best first with Up and Down, and a card 
 V switches to the list, which has every result with its details, for as long as the shell runs. To open on the list every time:
 
 ```bash
-omarchy bar set yamz8.benchmarks view List
+omarchy bar set yamz8.model-benchmarks view List
 ```
 
 ## Network
 
-One request, to `https://models.dev/models.json`, and only when the panel is opened and the saved copy is more than a day old (or on R). Nothing runs while the panel is closed. The copy is kept in `~/.cache/yamz8.benchmarks/`; when the fetch fails, the saved copy stays on show and the panel says so.
+One request, to `https://models.dev/models.json`, and only when the panel is opened and the saved copy is more than a day old (or on R). Nothing runs while the panel is closed. The copy is kept in `~/.cache/yamz8.model-benchmarks/`; when the fetch fails, the saved copy stays on show and the panel says so.
 
 ## Reading the scores
 

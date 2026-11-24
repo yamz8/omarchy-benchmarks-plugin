@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "id": "yamz8.benchmarks",
-  "name": "Benchmarks",
+  "id": "yamz8.model-benchmarks",
+  "name": "Model Benchmarks",
   "version": "0.6.0",
   "author": "yamz8",
   "license": "MIT",
@@ -13,7 +13,7 @@
     "barWidget": "Panel.qml"
   },
   "barWidget": {
-    "displayName": "Benchmarks",
+    "displayName": "Model Benchmarks",
     "description": "Model benchmark scores from models.dev, fetched when the panel opens.",
     "category": "Info",
     "allowMultiple": false,

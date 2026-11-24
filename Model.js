@@ -31,7 +31,7 @@ var MAX_MINE_LISTS = 6
 // the cached copy and says so with fetchError.
 var FETCH_SCRIPT = [
   'url=$1; max_age=$2; force=$3',
-  'dir="${XDG_CACHE_HOME:-$HOME/.cache}/yamz8.benchmarks"',
+  'dir="${XDG_CACHE_HOME:-$HOME/.cache}/yamz8.model-benchmarks"',
   'file="$dir/models.json"',
   'mkdir -p "$dir" || exit 1',
   'age=$max_age',

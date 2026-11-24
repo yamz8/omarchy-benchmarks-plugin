@@ -14,8 +14,8 @@ import "Model.js" as Model
 // the cached copy is more than a day old.
 Panel {
   id: root
-  moduleName: "yamz8.benchmarks"
-  ipcTarget: "yamz8.benchmarks"
+  moduleName: "yamz8.model-benchmarks"
+  ipcTarget: "yamz8.model-benchmarks"
 
   property var models: []
   // The models this machine has used, by Model.modelKey; read from the agents
