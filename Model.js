@@ -288,7 +288,10 @@ function age(seconds) {
 //   one harness.
 // - Where a model has one score and the results reach back far enough, the
 //   graph is score against release date, with a line along the best so far.
-// - Otherwise it is the top results as plain columns.
+// - Otherwise it is the top results as plain columns, unless the scores are
+//   ratings rather than shares of a whole (Elo, in the thousands): a column
+//   measured from zero would make those all look alike, so they are dots on
+//   an axis that keeps to where the scores are.
 
 var MAX_COLUMNS = 12
 var MAX_STRIPS = 4
@@ -468,6 +471,7 @@ function chart(rows) {
     var days = dated.map(function(index) { return dayNumber(rows[index].when) })
     if (Math.max.apply(null, days) - Math.min.apply(null, days) >= TIME_MIN_DAYS) return timeChart(rows, dated)
   }
+  if (rows[0].score > 100) return stripsChart(rows, [])
   return columnsChart(rows)
 }
 

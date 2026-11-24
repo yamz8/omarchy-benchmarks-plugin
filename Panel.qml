@@ -21,6 +21,10 @@ Panel {
   // The models this machine has used, by Model.modelKey; read from the agents
   // panel's records each time the panel opens.
   property var used: ({})
+  // Which benchmarks come first depends on `used`, so nothing is listed
+  // until it has been read once; otherwise the first open would show one
+  // benchmark and then jump to another.
+  property bool usedReady: false
   property double fetchedAt: 0
   property bool fetchError: false
   property bool loadFailed: false
@@ -44,7 +48,7 @@ Panel {
   readonly property color dim: Qt.darker(foreground, 1.55)
   readonly property string fontFamily: bar && bar.fontFamily ? bar.fontFamily : Style.font.family
 
-  readonly property var lists: Model.lists(models, used)
+  readonly property var lists: usedReady ? Model.lists(models, used) : []
   readonly property int listIndex: {
     for (var i = 0; i < lists.length; i++) if (lists[i].key === selectedKey) return i
     return 0
@@ -73,14 +77,13 @@ Panel {
     if (cursorActive && selectedIndex < rows.length) {
       var row = rows[selectedIndex]
       var parts = [row.name, Commons.I18n.formatNumber(row.score, row.decimals)]
-      var detail = rowDetail(row)
-      if (detail !== "") parts.push(detail)
-      var host = Model.urlHost(row.source)
-      if (host !== "") parts.push(host)
+      var summary = rowSummary(row)
+      if (summary !== "") parts.push(summary)
       return parts.join(" · ")
     }
     if (chart.form === "time") return strings.t("chart.time")
-    if (chart.form === "strips") return strings.t("chart.strips")
+    if (chart.form === "strips" && chart.strips.length > 1) return strings.t("chart.strips")
+    if (chart.form === "strips") return strings.tn("chart.all", chart.total).arg(Commons.I18n.formatNumber(chart.total))
     if (chart.items.length >= chart.total) return strings.tn("chart.all", chart.total).arg(Commons.I18n.formatNumber(chart.total))
     return strings.t("chart.columns").arg(Commons.I18n.formatNumber(chart.items.length)).arg(Commons.I18n.formatNumber(chart.total))
   }
@@ -91,7 +94,7 @@ Panel {
     return strings.tn("age." + age.unit, age.count).arg(Commons.I18n.formatNumber(age.count))
   }
   readonly property string statusText: {
-    if (loading) return strings.t("status.loading").arg(Model.SOURCE_NAME)
+    if (loading || !usedReady) return strings.t("status.loading").arg(Model.SOURCE_NAME)
     if (models.length === 0) return loadFailed || fetchError ? strings.t("status.failed") : ""
     return strings.t(fetchError ? "status.saved" : "status.updated").arg(Model.SOURCE_NAME).arg(ageText)
   }
@@ -224,6 +227,14 @@ Panel {
     return parts.length > 0 ? parts.join(" · ") : row.metric
   }
 
+  // The details and where the score came from, which is where Enter or a
+  // click goes.
+  function rowSummary(row) {
+    var detail = rowDetail(row)
+    var host = Model.urlHost(row.source)
+    return detail !== "" && host !== "" ? detail + " · " + host : detail + host
+  }
+
   implicitWidth: button.implicitWidth
   implicitHeight: button.implicitHeight
 
@@ -263,8 +274,13 @@ Panel {
     id: usedProc
     stdout: StdioCollector {
       waitForEnd: true
-      onStreamFinished: root.used = Model.parseUsed(text)
+      onStreamFinished: {
+        root.used = Model.parseUsed(text)
+        root.usedReady = true
+      }
     }
+    // Without the records the panel still works; it just marks nothing.
+    onExited: function(exitCode) { if (exitCode !== 0) root.usedReady = true }
   }
 
   BarIconButton {
@@ -461,7 +477,7 @@ Panel {
               textFormat: Text.PlainText
               visible: root.rows.length === 0
               width: parent.width
-              text: root.loading ? strings.t("empty.loading") : strings.t("empty.failed")
+              text: root.loading || !root.usedReady ? strings.t("empty.loading") : strings.t("empty.failed")
               color: root.dim
               font.family: root.fontFamily
               font.pixelSize: Style.font.body
@@ -485,7 +501,7 @@ Panel {
                   id: scoreRow
                   required property var modelData
                   required property int index
-                  readonly property string detail: root.rowDetail(modelData)
+                  readonly property string detail: root.rowSummary(modelData)
                   width: rowColumn.width
                   foreground: root.foreground
                   hasCursor: root.cursorActive && root.selectedIndex === index
@@ -500,14 +516,6 @@ Panel {
                       if (pointerGate.moved(scoreRow, mouse)) root.select(scoreRow.index)
                     }
                     onClicked: root.openSource(scoreRow.modelData)
-                  }
-
-                  PanelToolTip {
-                    visible: rowMouse.containsMouse
-                    text: scoreRow.modelData.source !== ""
-                      ? strings.t("row.open").arg(Model.urlHost(scoreRow.modelData.source))
-                      : strings.t("row.noSource")
-                    fontFamily: root.fontFamily
                   }
 
                   RowLayout {

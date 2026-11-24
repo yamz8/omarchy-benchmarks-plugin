@@ -28,8 +28,6 @@
   "list.position": "%1 of %2",
   "empty.loading": "Loading…",
   "empty.failed": "No benchmark data yet. Press R to try again.",
-  "row.open": "Open the source at %1",
-  "row.noSource": "No source given",
   "view.list": "Show as a list",
   "view.graph": "Show as a graph",
   "chart.time": "Score by release date · the line is the best so far",

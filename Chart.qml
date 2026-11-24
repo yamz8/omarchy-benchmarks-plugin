@@ -143,7 +143,8 @@ Item {
         x: root.plotX + index * parent.slot + Style.space(2)
         y: root.plotY + root.plotHeight + Style.space(5)
         width: parent.slot - Style.space(4)
-        text: modelData.label !== "" ? modelData.label : root.otherLabel
+        // A lone strip is every result, and needs no name.
+        text: root.spec.strips.length === 1 ? "" : (modelData.label !== "" ? modelData.label : root.otherLabel)
         color: root.dim
         font.family: root.fontFamily
         font.pixelSize: Style.font.caption

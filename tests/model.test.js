@@ -239,6 +239,17 @@ test("a short or mostly undated history falls back to plain columns", () => {
   assert.equal(Model.chart(undated).form, "columns")
 })
 
+test("ratings with no history are dots on their own axis, not columns from zero", () => {
+  // Elo-style scores: from zero, 1850 and 1900 would be columns of the same height.
+  const rows = chartRows([1900, 1880, 1850, 1820, 1790, 1700].map(score => ({ score })))
+  const chart = Model.chart(rows)
+  assert.equal(chart.form, "strips")
+  assert.equal(chart.strips.length, 1)
+  assert.equal(chart.items.length, 6)
+  assert.ok(chart.axis.min > 1000, "axis starts at " + chart.axis.min)
+  assert.ok(chart.items[0].y - chart.items[5].y > 0.5, "the spread should fill the axis")
+})
+
 test("columns show the top results only, and say how many there are", () => {
   const specs = []
   for (let i = 0; i < 30; i++) specs.push({ score: 30 + i })
