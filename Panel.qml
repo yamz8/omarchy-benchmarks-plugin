@@ -55,6 +55,23 @@ Panel {
   }
   readonly property var currentList: lists.length > 0 ? lists[listIndex] : null
   readonly property var rows: currentList ? Model.rows(models, currentList.key, used) : []
+  // The longest score in the list as it is written, which sets the width of
+  // the list's score column. Only worked out while the list is on show.
+  readonly property string widestScore: {
+    var widest = ""
+    if (chartShown) return widest
+    for (var i = 0; i < rows.length; i++) {
+      var written = Commons.I18n.formatNumber(rows[i].score, rows[i].decimals)
+      if (written.length > widest.length) widest = written
+    }
+    return widest
+  }
+  // The list's numbers: the score a step above the rank, both above the name.
+  readonly property int scoreSize: Style.font.heading
+  readonly property int rankSize: Style.font.title
+  // How far a row's highlight reaches past the panel's content on each side.
+  readonly property real rowBleed: Style.space(8)
+
   // How many of the models you use have a score on this benchmark.
   readonly property int mineCount: {
     var seen = {}
@@ -282,6 +299,14 @@ Panel {
 
   onRowsChanged: selectedIndex = Math.max(0, Math.min(rows.length - 1, selectedIndex))
 
+  TextMetrics {
+    id: scoreMetrics
+    font.family: root.fontFamily
+    font.pixelSize: root.scoreSize
+    font.weight: Font.DemiBold
+    text: root.widestScore
+  }
+
   PointerMoveGate {
     id: pointerGate
     referenceItem: listFlick
@@ -498,6 +523,11 @@ Panel {
           visible: !root.chartShown
           Layout.fillWidth: true
           Layout.fillHeight: true
+          // A row's highlight reaches past the panel's content on both
+          // sides, so that the numbers inside it can stand in line with the
+          // arrows above: the ranks under one, the scores under the other.
+          Layout.leftMargin: -root.rowBleed
+          Layout.rightMargin: -root.rowBleed
           contentWidth: width
           contentHeight: listContent.implicitHeight
           clip: true
@@ -555,23 +585,26 @@ Panel {
                     onClicked: root.openSource(scoreRow.modelData)
                   }
 
+                  // The two numbers of a row stand at its ends, each centered
+                  // on the row's height, with the name and its details between.
                   RowLayout {
                     id: rowContent
                     anchors.left: parent.left
                     anchors.right: parent.right
                     anchors.verticalCenter: parent.verticalCenter
-                    anchors.leftMargin: Style.space(10)
-                    anchors.rightMargin: Style.space(10)
+                    anchors.leftMargin: root.rowBleed
+                    anchors.rightMargin: root.rowBleed
                     spacing: Style.space(10)
 
+                    // As wide as the arrow above it and centered like it.
                     Text {
                       textFormat: Text.PlainText
-                      Layout.preferredWidth: Style.space(26)
+                      Layout.preferredWidth: previousButton.implicitWidth
                       text: Commons.I18n.formatNumber(scoreRow.modelData.rank)
                       color: root.dim
                       font.family: root.fontFamily
-                      font.pixelSize: Style.font.body
-                      horizontalAlignment: Text.AlignRight
+                      font.pixelSize: root.rankSize
+                      horizontalAlignment: Text.AlignHCenter
                     }
 
                     ColumnLayout {
@@ -605,13 +638,20 @@ Panel {
                       }
                     }
 
+                    // The score is what the row is for: the largest thing on
+                    // it, in a column of one width, and ending on the same
+                    // side whatever the reading direction, so the decimal
+                    // points of a list line up.
                     Text {
                       textFormat: Text.PlainText
+                      Layout.preferredWidth: Math.ceil(scoreMetrics.advanceWidth)
+                      LayoutMirroring.enabled: false
+                      horizontalAlignment: Text.AlignRight
                       text: Commons.I18n.formatNumber(scoreRow.modelData.score, scoreRow.modelData.decimals)
                       color: root.foreground
                       font.family: root.fontFamily
-                      font.pixelSize: Style.font.body
-                      font.bold: true
+                      font.pixelSize: root.scoreSize
+                      font.weight: Font.DemiBold
                     }
                   }
                 }
