@@ -16,7 +16,7 @@ It needs nothing beyond what Omarchy ships (`curl` and `jq`). Remove it with `om
 
 ## Using it
 
-Click the podium icon in the bar, or bind a key to `omarchy-shell yamz8.benchmarks toggle`.
+Click the podium icon in the bar, or bind a key to `omarchy-shell shell toggle yamz8.benchmarks`, which opens it on the display you are on.
 
 | Key | Does |
 |---|---|
