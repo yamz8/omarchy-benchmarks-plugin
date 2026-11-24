@@ -506,8 +506,9 @@ Item {
     }
   }
 
-  // ---- The result under the cursor, on a card beside its mark: above it
-  // where there is room, below it otherwise, and never off the graph's
+  // ---- The result under the cursor, on a card beside its mark: above a dot
+  // where there is room and below it otherwise, at the foot of a column,
+  // where it covers no other column's score, and never off the graph's
   // sides. The card takes no pointer events, so the marks under it still do.
   readonly property var selectedItem: {
     if (spec === null || selectedRow < 0) return null
@@ -526,6 +527,7 @@ Item {
     // Below, it also stays clear of the pointer's arrow.
     readonly property real clearBelow: Style.space(22)
     readonly property bool above: markY - clearAbove - height >= 0
+    readonly property bool atFoot: root.columns && root.spec.dots !== true
     readonly property var edge: Border.localOrSurfaceSpec("tooltip", "border", Commons.Color.tooltip.border, Commons.Color.tooltip.border, Style.normalBorderWidth)
 
     visible: mark !== null && root.tipTitle !== ""
@@ -533,7 +535,7 @@ Item {
     width: Math.min(root.width, Math.max(tipName.implicitWidth, Math.min(tipMore.implicitWidth, Style.space(250))) + contentLeftInset + contentRightInset)
     height: tipText.implicitHeight + contentTopInset + contentBottomInset
     x: Math.max(0, Math.min(root.width - width, markX - width / 2))
-    y: above ? markY - clearAbove - height : Math.min(root.height - height, markY + clearBelow)
+    y: atFoot ? root.plotY + root.plotHeight - height - Style.space(6) : (above ? markY - clearAbove - height : Math.min(root.height - height, markY + clearBelow))
     color: Commons.Color.tooltip.background
     borderSpec: edge
     radius: Style.cornerRadius
