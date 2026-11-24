@@ -312,7 +312,7 @@ Panel {
     bar: root.bar
     open: root.opened
     focusTarget: keyCatcher
-    contentWidth: panel.fittedContentWidth(Style.space(440))
+    contentWidth: panel.fittedContentWidth(Style.space(520))
     contentHeight: panel.fittedContentHeight(fixedContent.implicitHeight + (root.chartShown ? chartView.implicitHeight + Style.space(8) : listContent.implicitHeight) + Style.space(12), Style.space(620))
 
     PanelKeyCatcher {
