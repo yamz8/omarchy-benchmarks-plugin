@@ -46,7 +46,14 @@ The panel opens on a graph, and the graph's form follows how the benchmark is bu
 - **A strip for each harness.** On an agent benchmark, where most results name the harness the model ran in, every result is a dot in its harness's strip, with the leader of each strip named. Up to three harnesses get a strip of their own, each with at least three results; everything else shares a wider one named Other. Scores compare fairly only within one harness, so that is how they are laid out.
 - **Columns.** Where there is too little history for a line and no harness to split on, the top twelve results as columns measured from zero. Scores that are ratings rather than shares of a whole (Elo, in the thousands) are dots instead, since columns from zero would all look the same height.
 
-Up and Down step through the results on the graph, best first, and the line under it says which one the cursor is on and what its score was reported with. Enter opens its source, as in the list.
+Every graph names its axes, and no more than that:
+
+- **Top left: what the scores are**, in the words their sources use for the metric (accuracy, resolve rate, Elo). Results on one benchmark don't always agree on the wording, so where no single one covers two thirds of them, the two commonest are named.
+- **Along the bottom: what the other axis is**, where it needs saying. The model's release date, the harness the model ran in, or that only the top twelve results are on show. Models named under their own columns need no title.
+
+On a graph over time, the line is the best score so far, as the key beside the title says. A diamond is a model you use.
+
+Up and Down step through the results on the graph, best first, and the line under it says which one the cursor is on and what its score was reported with, including its own metric where the benchmark's results name more than one. Enter opens its source, as in the list.
 
 V switches to the list, which has every result with its details, for as long as the shell runs. To open on the list every time:
 

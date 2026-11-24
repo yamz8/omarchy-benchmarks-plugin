@@ -70,21 +70,38 @@ Panel {
   readonly property var chart: Model.chart(rows)
   readonly property bool chartShown: graphView && chart.form !== ""
 
-  // Under the graph: how to read it, or, with a result under the cursor,
-  // which one it is and what its score was reported with.
+  // Under the graph: with a result under the cursor, which one it is and
+  // what its score was reported with. Otherwise it stays empty, unless the
+  // graph had to leave results out for want of a date.
   readonly property string footerText: {
     if (chart.form === "") return ""
     if (cursorActive && selectedIndex < rows.length) {
       var row = rows[selectedIndex]
-      var parts = [row.name, Commons.I18n.formatNumber(row.score, row.decimals)]
+      // Where the results don't all name one metric, the score says its own.
+      var score = Commons.I18n.formatNumber(row.score, row.decimals)
+      var parts = [row.name, chart.metrics.length > 1 && row.metric !== "" ? strings.t("chart.scoreAs").arg(score).arg(row.metric) : score]
       var summary = rowSummary(row)
       if (summary !== "") parts.push(summary)
       return parts.join(" · ")
     }
-    if (chart.form === "time") return strings.t("chart.time")
-    if (chart.form === "strips") return strings.t("chart.strips")
-    if (chart.items.length >= chart.total) return strings.tn("chart.all", chart.total).arg(Commons.I18n.formatNumber(chart.total))
-    return strings.t("chart.columns").arg(Commons.I18n.formatNumber(chart.items.length)).arg(Commons.I18n.formatNumber(chart.total))
+    if (chart.form !== "time" || chart.items.length >= chart.total) return ""
+    return strings.t("chart.dated").arg(Commons.I18n.formatNumber(chart.items.length)).arg(Commons.I18n.formatNumber(chart.total))
+  }
+
+  // The value axis's title: the metric in its sources' words, or just "Score"
+  // where they name none.
+  readonly property string valueTitle: {
+    if (chart.metrics.length === 0) return strings.t("axis.score")
+    var text = chart.metrics.join(", ")
+    return text.charAt(0).toUpperCase() + text.slice(1)
+  }
+  // The other axis's: dates and harnesses need saying, and so does a graph
+  // that shows only the top results. Models named under their columns don't.
+  readonly property string baseTitle: {
+    if (chart.form === "time") return strings.t("axis.time")
+    if (chart.form === "strips") return strings.t("axis.strips")
+    if (chart.form === "columns" && chart.items.length < chart.total) return strings.t("chart.columns").arg(Commons.I18n.formatNumber(chart.items.length)).arg(Commons.I18n.formatNumber(chart.total))
+    return ""
   }
 
   readonly property string ageText: {
@@ -302,7 +319,7 @@ Panel {
     open: root.opened
     focusTarget: keyCatcher
     contentWidth: panel.fittedContentWidth(Style.space(440))
-    contentHeight: panel.fittedContentHeight(fixedContent.implicitHeight + (root.chartShown ? chartView.implicitHeight : listContent.implicitHeight) + Style.space(12) + (footer.visible ? footer.implicitHeight + Style.space(12) : 0), Style.space(620))
+    contentHeight: panel.fittedContentHeight(fixedContent.implicitHeight + (root.chartShown ? chartView.implicitHeight + Style.space(8) : listContent.implicitHeight) + Style.space(12) + (footer.visible ? footer.implicitHeight + Style.space(12) : 0), Style.space(620))
 
     PanelKeyCatcher {
       id: keyCatcher
@@ -444,6 +461,8 @@ Panel {
           visible: root.chartShown
           Layout.fillWidth: true
           Layout.preferredHeight: implicitHeight
+          // The graph is its own block, set off from the benchmark's name.
+          Layout.topMargin: Style.space(8)
           spec: root.chart
           rows: root.rows
           selectedRow: root.cursorActive ? root.selectedIndex : -1
@@ -451,6 +470,9 @@ Panel {
           dim: root.dim
           fontFamily: root.fontFamily
           otherLabel: strings.t("group.other")
+          valueTitle: root.valueTitle
+          baseTitle: root.baseTitle
+          bestLabel: strings.t("key.best")
           onPicked: function(row) { root.selectFromChart(row) }
           onActivated: function(row) { root.openSource(root.rows[row]) }
         }

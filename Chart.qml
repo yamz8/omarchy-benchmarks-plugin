@@ -8,8 +8,11 @@ import "Model.js" as Model
 // benchmark is built and hands over positions between 0 and 1; this only
 // draws them: score against release date with a line along the best so far,
 // a strip of dots for each harness on an agent benchmark, or columns for the
-// top results. The panel owns the selection, so the keyboard, the pointer
-// and the line under the graph agree on which result is meant.
+// top results. Each graph says what it shows: a title for the value axis at
+// the top left and, where the labels along the bottom don't speak for
+// themselves, one for that axis too. The panel owns the selection, so the
+// keyboard, the pointer and the line under the graph agree on which result
+// is meant.
 Item {
   id: root
 
@@ -20,6 +23,11 @@ Item {
   property color dim: Qt.darker(foreground, 1.55)
   property string fontFamily: Style.font.family
   property string otherLabel: ""
+  // What the two axes measure and what the line is, worded by the panel.
+  property string valueTitle: ""
+  property string baseTitle: ""
+  property string bestLabel: ""
+  readonly property color titleColor: Util.alpha(foreground, 0.85)
 
   signal picked(int row)
   signal activated(int row)
@@ -43,7 +51,7 @@ Item {
   LayoutMirroring.enabled: false
   LayoutMirroring.childrenInherit: true
 
-  implicitHeight: Style.space(300)
+  implicitHeight: Style.space(336)
 
   TextMetrics {
     id: glyph
@@ -63,10 +71,14 @@ Item {
   // name without the first one running off the left edge.
   readonly property bool slanted: columns && plotWidth / Math.max(1, spec.items.length) < Style.space(70)
   readonly property real nameLength: Style.space(124)
+  // The row the value axis's title and the key share, and the one the other
+  // axis's title has under its labels when it has a title.
+  readonly property real titleRow: lineHeight + Style.space(10)
+  readonly property real baseTitleRow: baseTitle !== "" ? lineHeight + Style.space(8) : 0
   readonly property real plotX: gutter
-  readonly property real plotY: (strips ? 2 : 1) * lineHeight + Style.space(4)
+  readonly property real plotY: titleRow + (strips ? 2 : 1) * lineHeight + Style.space(4)
   readonly property real plotWidth: Math.max(1, width - gutter - Style.space(6))
-  readonly property real plotHeight: Math.max(1, height - plotY - (columns && slanted ? nameLength * 0.92 + lineHeight / 2 : (columns || strips ? 2 : 1) * lineHeight + Style.space(8)))
+  readonly property real plotHeight: Math.max(1, height - plotY - baseTitleRow - (columns && slanted ? nameLength * 0.92 + lineHeight / 2 : (columns || strips ? 2 : 1) * lineHeight + Style.space(8)))
 
   // A model you use is drawn larger than the rest as well as in another
   // shape and color: in a theme whose accent is close to its text color,
@@ -76,6 +88,57 @@ Item {
 
   function valueY(fraction) {
     return plotY + plotHeight * (1 - fraction)
+  }
+
+  // ---- What the graph shows: the value axis's title over its numbers, a
+  // key for the line opposite it, and the other axis's title along the
+  // bottom. The titles are a step brighter than the numbers they head.
+  Text {
+    textFormat: Text.PlainText
+    x: 0
+    y: 0
+    width: Math.max(0, root.width - (key.visible ? key.width + Style.space(18) : 0))
+    text: root.valueTitle
+    color: root.titleColor
+    font.family: root.fontFamily
+    font.pixelSize: Style.font.caption
+    elide: Text.ElideRight
+  }
+
+  Row {
+    id: key
+    visible: root.time && root.bestLabel !== ""
+    x: root.width - width - Style.space(6)
+    y: 0
+    spacing: Style.space(6)
+
+    Rectangle {
+      anchors.verticalCenter: parent.verticalCenter
+      width: Style.space(14)
+      height: 2
+      color: Commons.Color.accent
+    }
+
+    Text {
+      textFormat: Text.PlainText
+      text: root.bestLabel
+      color: root.dim
+      font.family: root.fontFamily
+      font.pixelSize: Style.font.caption
+    }
+  }
+
+  Text {
+    textFormat: Text.PlainText
+    x: root.plotX
+    y: root.height - height
+    width: root.plotWidth
+    text: root.baseTitle
+    color: root.titleColor
+    font.family: root.fontFamily
+    font.pixelSize: Style.font.caption
+    horizontalAlignment: Text.AlignHCenter
+    elide: Text.ElideRight
   }
 
   // ---- Value axis: quiet gridlines on round numbers.
@@ -108,7 +171,7 @@ Item {
     }
   }
 
-  // ---- Time axis.
+  // ---- Time axis. The year is written in full: "Mar 26" reads as a day.
   Repeater {
     model: root.time ? root.spec.xTicks : []
 
@@ -117,7 +180,7 @@ Item {
       textFormat: Text.PlainText
       x: root.plotX + modelData.x * root.plotWidth - width / 2
       y: root.plotY + root.plotHeight + Style.space(5)
-      text: new Date(modelData.year, modelData.month, 1).toLocaleDateString(Qt.locale(Commons.I18n.formatLocale), "MMM yy")
+      text: new Date(modelData.year, modelData.month, 1).toLocaleDateString(Qt.locale(Commons.I18n.formatLocale), "MMM yyyy")
       color: root.dim
       font.family: root.fontFamily
       font.pixelSize: Style.font.caption
@@ -373,7 +436,7 @@ Item {
       readonly property real slot: strip.w * root.plotWidth
       textFormat: Text.PlainText
       x: root.plotX + (strip.x - strip.w / 2) * root.plotWidth + Style.space(2)
-      y: Math.max(0, root.valueY(modelData.y) - height - Style.space(6))
+      y: Math.max(root.titleRow, root.valueY(modelData.y) - height - Style.space(6))
       z: 4
       width: slot - Style.space(4)
       text: root.rowAt(modelData.row).name

@@ -161,7 +161,7 @@ function chartRows(specs) {
     id: "lab/c" + i,
     name: spec.name || "Model " + i,
     released: spec.when || "",
-    benchmarks: [{ name: "Bench", score: spec.score, harness: spec.harness }]
+    benchmarks: [{ name: "Bench", score: spec.score, harness: spec.harness, metric: spec.metric }]
   }))
   const parsed = Model.parse(response(models)).models
   return Model.rows(parsed, Model.lists(parsed.concat(field("Bench", 0)))[0].key)
@@ -281,6 +281,23 @@ test("columns show the top results only, and say how many there are", () => {
   assert.equal(chart.total, 30)
   assert.deepEqual(chart.order, chart.items.map(item => item.row))
   assert.equal(Model.chart([]).form, "")
+})
+
+test("the value axis is titled with the metric most results name", () => {
+  const named = metrics => Model.chart(chartRows(metrics.map((metric, i) => ({ score: 90 - i, metric })))).metrics
+  // One wording covers enough of them; "score" and no metric name nothing.
+  assert.deepEqual(named(["resolve rate", "Resolve Rate", "resolve rate", "pass@1", "score", ""]), ["resolve rate"])
+  // Split results name both, commonest first, and stop at two.
+  assert.deepEqual(named(["pass@1", "success rate", "pass@1", "success rate", "pass@1", "accuracy"]), ["pass@1", "success rate"])
+  assert.deepEqual(named(["a", "b", "c", "d"]), ["a", "b"])
+  assert.deepEqual(named(["score", "", "score"]), [])
+  // A metric named like an object's own machinery is only a name.
+  assert.deepEqual(named(["constructor", "__proto__", "constructor"]), ["constructor"])
+
+  // Columns show the top results only, so only those are counted.
+  const rows = chartRows(Array.from({ length: 20 }, (_, i) => ({ score: 90 - i, metric: i < 12 ? "accuracy" : "win rate" })))
+  assert.deepEqual(Model.chart(rows).metrics, ["accuracy"])
+  assert.deepEqual(Model.chart([]).metrics, [])
 })
 
 test("an impossible date is no date", () => {

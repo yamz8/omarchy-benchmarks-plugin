@@ -313,6 +313,11 @@ var TIME_MIN_DAYS = 180
 var TIME_MIN_POINTS = 8
 var MAX_TIME_TICKS = 5
 var MAX_LABELS = 6
+// The value axis is titled with the commonest metric, and with the next one
+// too when the first is named by under this share of the results that name
+// any.
+var METRIC_SHARE = 2 / 3
+var MAX_METRICS = 2
 
 // "Terminus-2" and "Terminus 2" are one harness, and so are "Claude Code"
 // and "Claude Code 2.1.207".
@@ -484,9 +489,35 @@ function timeChart(rows, dated) {
   }
 }
 
-function chart(rows) {
-  if (!rows || rows.length === 0) return { form: "", axis: null, items: [], order: [], total: 0, strips: [], steps: [], xTicks: [] }
+// What the scores are, in the words their sources use: the metric most of the
+// results name, and a second one when the first covers too few of them. A
+// benchmark's results rarely agree on the wording ("resolved", "resolve
+// rate", "pass@1") and no list of metrics is kept here to merge them. "score"
+// says nothing the axis doesn't already, so it counts as naming none.
+function metricNames(rows) {
+  var byKey = Object.create(null)
+  var named = 0
+  for (var i = 0; i < rows.length; i++) {
+    var key = String(rows[i].metric || "").toLowerCase()
+    if (key === "" || key === "score") continue
+    named++
+    if (!byKey[key]) byKey[key] = { name: rows[i].metric, count: 0 }
+    byKey[key].count++
+  }
+  var metrics = []
+  for (var k in byKey) metrics.push(byKey[k])
+  metrics.sort(function(a, b) { return b.count - a.count || (a.name < b.name ? -1 : a.name > b.name ? 1 : 0) })
+  var names = []
+  var covered = 0
+  for (var j = 0; j < metrics.length && names.length < MAX_METRICS; j++) {
+    names.push(metrics[j].name)
+    covered += metrics[j].count
+    if (covered / named >= METRIC_SHARE) break
+  }
+  return names
+}
 
+function shapedChart(rows) {
   var groups = harnessGroups(rows)
   if (groups.length > 0) return stripsChart(rows, groups)
 
@@ -497,6 +528,16 @@ function chart(rows) {
     if (Math.max.apply(null, days) - Math.min.apply(null, days) >= TIME_MIN_DAYS) return timeChart(rows, dated)
   }
   return columnsChart(rows, rows[0].score <= 100)
+}
+
+// The graph for one benchmark's rows, with `metrics` naming what the results
+// drawn on it measure.
+function chart(rows) {
+  if (!rows || rows.length === 0) return { form: "", axis: null, items: [], order: [], total: 0, strips: [], steps: [], xTicks: [], metrics: [] }
+
+  var spec = shapedChart(rows)
+  spec.metrics = metricNames(spec.order.map(function(index) { return rows[index] }))
+  return spec
 }
 
 // Names on the time graph: the models you use first, best first, then the
