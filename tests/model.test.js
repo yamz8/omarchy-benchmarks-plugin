@@ -243,11 +243,13 @@ test("ratings with no history are dots on their own axis, not columns from zero"
   // Elo-style scores: from zero, 1850 and 1900 would be columns of the same height.
   const rows = chartRows([1900, 1880, 1850, 1820, 1790, 1700].map(score => ({ score })))
   const chart = Model.chart(rows)
-  assert.equal(chart.form, "strips")
-  assert.equal(chart.strips.length, 1)
+  assert.equal(chart.form, "columns")
+  assert.equal(chart.dots, true)
   assert.equal(chart.items.length, 6)
   assert.ok(chart.axis.min > 1000, "axis starts at " + chart.axis.min)
   assert.ok(chart.items[0].y - chart.items[5].y > 0.5, "the spread should fill the axis")
+  // Shares of a whole keep their columns from zero.
+  assert.equal(Model.chart(chartRows([90, 80, 70].map(score => ({ score })))).dots, false)
 })
 
 test("columns show the top results only, and say how many there are", () => {

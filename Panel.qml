@@ -82,8 +82,7 @@ Panel {
       return parts.join(" · ")
     }
     if (chart.form === "time") return strings.t("chart.time")
-    if (chart.form === "strips" && chart.strips.length > 1) return strings.t("chart.strips")
-    if (chart.form === "strips") return strings.tn("chart.all", chart.total).arg(Commons.I18n.formatNumber(chart.total))
+    if (chart.form === "strips") return strings.t("chart.strips")
     if (chart.items.length >= chart.total) return strings.tn("chart.all", chart.total).arg(Commons.I18n.formatNumber(chart.total))
     return strings.t("chart.columns").arg(Commons.I18n.formatNumber(chart.items.length)).arg(Commons.I18n.formatNumber(chart.total))
   }

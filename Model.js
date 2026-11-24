@@ -290,8 +290,8 @@ function age(seconds) {
 //   graph is score against release date, with a line along the best so far.
 // - Otherwise it is the top results as plain columns, unless the scores are
 //   ratings rather than shares of a whole (Elo, in the thousands): a column
-//   measured from zero would make those all look alike, so they are dots on
-//   an axis that keeps to where the scores are.
+//   measured from zero would make those all look alike, so each is a dot
+//   over its name, on an axis that keeps to where the scores are.
 
 var MAX_COLUMNS = 12
 var MAX_STRIPS = 4
@@ -362,16 +362,18 @@ function valueAxis(low, high, fromZero) {
   return { min: min, max: max, ticks: ticks, decimals: step % 1 === 0 ? 0 : 1 }
 }
 
-function columnsChart(rows) {
+// The top results side by side, each over its name: columns measured from
+// zero, or with fromZero false, dots on an axis that keeps to the scores.
+function columnsChart(rows, fromZero) {
   var shown = rows.slice(0, MAX_COLUMNS)
-  var axis = valueAxis(0, shown.length > 0 ? shown[0].score : 0, true)
+  var axis = valueAxis(shown[shown.length - 1].score, shown[0].score, fromZero)
   var items = []
   var order = []
   for (var i = 0; i < shown.length; i++) {
-    items.push({ row: i, x: (i + 0.5) / shown.length, y: shown[i].score / axis.max, strip: -1, record: false })
+    items.push({ row: i, x: (i + 0.5) / shown.length, y: (shown[i].score - axis.min) / (axis.max - axis.min), strip: -1, record: false })
     order.push(i)
   }
-  return { form: "columns", axis: axis, items: items, order: order, total: rows.length, strips: [], steps: [], xTicks: [] }
+  return { form: "columns", dots: !fromZero, axis: axis, items: items, order: order, total: rows.length, strips: [], steps: [], xTicks: [] }
 }
 
 // A strip for each of the harnesses most results ran in, and one for the
@@ -471,8 +473,7 @@ function chart(rows) {
     var days = dated.map(function(index) { return dayNumber(rows[index].when) })
     if (Math.max.apply(null, days) - Math.min.apply(null, days) >= TIME_MIN_DAYS) return timeChart(rows, dated)
   }
-  if (rows[0].score > 100) return stripsChart(rows, [])
-  return columnsChart(rows)
+  return columnsChart(rows, rows[0].score <= 100)
 }
 
 // Names on the time graph: the models you use first, best first, then the

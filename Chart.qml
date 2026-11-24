@@ -69,6 +69,12 @@ Item {
   readonly property real plotWidth: Math.max(1, width - gutter - Style.space(6))
   readonly property real plotHeight: Math.max(1, height - plotY - (columns && slanted ? nameLength * 0.87 + lineHeight / 2 : (columns || strips ? 2 : 1) * lineHeight + Style.space(8)))
 
+  // A model you use is drawn larger than the rest as well as in another
+  // shape and color: in a theme whose accent is close to its text color,
+  // size and shape are what tell it apart.
+  readonly property real dotSize: Style.space(8)
+  readonly property real mineSize: Style.space(10)
+
   function valueY(fraction) {
     return plotY + plotHeight * (1 - fraction)
   }
@@ -143,8 +149,7 @@ Item {
         x: root.plotX + index * parent.slot + Style.space(2)
         y: root.plotY + root.plotHeight + Style.space(5)
         width: parent.slot - Style.space(4)
-        // A lone strip is every result, and needs no name.
-        text: root.spec.strips.length === 1 ? "" : (modelData.label !== "" ? modelData.label : root.otherLabel)
+        text: modelData.label !== "" ? modelData.label : root.otherLabel
         color: root.dim
         font.family: root.fontFamily
         font.pixelSize: Style.font.caption
@@ -167,7 +172,9 @@ Item {
       readonly property var row: root.rowAt(modelData.row)
       readonly property bool selected: root.selectedRow === modelData.row
       readonly property real slot: root.plotWidth / root.spec.items.length
-      readonly property real barHeight: Math.max(Style.space(2), modelData.y * root.plotHeight)
+      // Ratings are a dot at the score rather than a column from zero.
+      readonly property bool asDot: root.spec.dots === true
+      readonly property real barHeight: asDot ? modelData.y * root.plotHeight : Math.max(Style.space(2), modelData.y * root.plotHeight)
 
       x: root.plotX + modelData.x * root.plotWidth - slot / 2
       y: 0
@@ -186,6 +193,18 @@ Item {
       }
 
       Rectangle {
+        visible: column.asDot
+        x: parent.width / 2 - width / 2
+        y: root.plotY + root.plotHeight - column.barHeight - height / 2
+        width: column.row.mine ? root.mineSize : root.dotSize
+        height: width
+        radius: column.row.mine ? 1 : width / 2
+        rotation: column.row.mine ? 45 : 0
+        color: column.row.mine ? root.foreground : Commons.Color.accent
+      }
+
+      Rectangle {
+        visible: !column.asDot
         // A gap between neighbours, and a top rounded where the column stops.
         x: Math.round(parent.width * 0.2)
         y: root.plotY + root.plotHeight - column.barHeight
@@ -199,7 +218,7 @@ Item {
       Text {
         textFormat: Text.PlainText
         width: parent.width
-        y: root.plotY + root.plotHeight - column.barHeight - height - 1
+        y: root.plotY + root.plotHeight - column.barHeight - height - (column.asDot ? Style.space(8) : 1)
         text: Commons.I18n.formatNumber(column.row.score, column.row.decimals)
         color: root.foreground
         font.family: root.fontFamily
@@ -281,7 +300,7 @@ Item {
       required property var modelData
       readonly property var row: root.rowAt(modelData.row)
       readonly property bool selected: root.selectedRow === modelData.row
-      readonly property real size: selected ? Style.space(12) : Style.space(8)
+      readonly property real size: selected ? Style.space(13) : (row.mine ? root.mineSize : root.dotSize)
 
       // A target larger than the mark, so a dot is easy to land on.
       width: Style.space(16)
@@ -294,11 +313,11 @@ Item {
       // by shape as well as by color.
       Rectangle {
         anchors.centerIn: parent
-        width: dot.row.mine ? dot.size * 0.85 : dot.size
+        width: dot.size
         height: width
         radius: dot.row.mine ? 1 : width / 2
         rotation: dot.row.mine ? 45 : 0
-        color: dot.selected || dot.row.mine ? root.foreground : (dot.modelData.record ? Commons.Color.accent : Util.alpha(Commons.Color.accent, 0.45))
+        color: dot.selected || dot.row.mine ? root.foreground : (dot.modelData.record ? Commons.Color.accent : Util.alpha(Commons.Color.accent, 0.6))
         // A ring in the surface color keeps overlapping dots apart.
         border.width: dot.selected ? 2 : 1
         border.color: dot.selected ? Commons.Color.accent : root.surface
@@ -315,19 +334,30 @@ Item {
   }
 
   // Names for the models you use and the record setters, where there is room.
+  // Each sits on a patch of the surface color, so a dot behind a name doesn't
+  // run through its letters.
   Repeater {
     model: root.time ? Model.pointLabels(root.spec, root.rows, root.plotWidth, root.plotHeight, glyph.advanceWidth, root.lineHeight) : []
 
-    Text {
+    Rectangle {
       required property var modelData
-      textFormat: Text.PlainText
-      x: root.plotX + modelData.x
+      x: root.plotX + modelData.x - Style.space(2)
       y: root.plotY + modelData.y
       z: 5
-      text: modelData.text
-      color: root.selectedRow === modelData.row || modelData.mine ? root.foreground : root.dim
-      font.family: root.fontFamily
-      font.pixelSize: Style.font.caption
+      width: label.implicitWidth + Style.space(4)
+      height: label.implicitHeight
+      radius: Style.space(2)
+      color: Util.alpha(root.surface, 0.85)
+
+      Text {
+        id: label
+        textFormat: Text.PlainText
+        x: Style.space(2)
+        text: parent.modelData.text
+        color: root.selectedRow === parent.modelData.row || parent.modelData.mine ? root.foreground : root.dim
+        font.family: root.fontFamily
+        font.pixelSize: Style.font.caption
+      }
     }
   }
 
