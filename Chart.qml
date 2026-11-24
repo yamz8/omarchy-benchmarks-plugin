@@ -27,7 +27,10 @@ Item {
   property string valueTitle: ""
   property string baseTitle: ""
   property string bestLabel: ""
-  readonly property color titleColor: Util.alpha(foreground, 0.85)
+  // Titles are in the text color and the numbers under them in the dim one,
+  // as the benchmark's name and the line under it are. A tint of the text
+  // color would come out fainter than the numbers in a light theme.
+  readonly property color titleColor: foreground
 
   signal picked(int row)
   signal activated(int row)
@@ -78,7 +81,21 @@ Item {
   readonly property real plotX: gutter
   readonly property real plotY: titleRow + (strips ? 2 : 1) * lineHeight + Style.space(4)
   readonly property real plotWidth: Math.max(1, width - gutter - Style.space(6))
-  readonly property real plotHeight: Math.max(1, height - plotY - baseTitleRow - (columns && slanted ? nameLength * 0.92 + lineHeight / 2 : (columns || strips ? 2 : 1) * lineHeight + Style.space(8)))
+  readonly property real plotHeight: Math.max(1, height - plotY - baseTitleRow - (columns && slanted ? nameLength * 0.92 + lineHeight / 2 : (columns || strips ? baseLines : 1) * lineHeight + Style.space(8)))
+
+  // How many lines the names along the bottom take: one, or two when a
+  // harness or a model has a name too long for its slot. Counted from the
+  // names as laid out, so the graph gets the line back when none wraps.
+  property int baseLines: 1
+  function measureBaseLines() {
+    var lines = 1
+    var names = strips ? stripNames : (columns && !slanted ? columnMarks : null)
+    for (var i = 0; names !== null && i < names.count; i++) {
+      var item = names.itemAt(i)
+      if (item) lines = Math.max(lines, item.lines)
+    }
+    baseLines = lines
+  }
 
   // A model you use is drawn larger than the rest as well as in another
   // shape and color: in a theme whose accent is close to its text color,
@@ -92,7 +109,7 @@ Item {
 
   // ---- What the graph shows: the value axis's title over its numbers, a
   // key for the line opposite it, and the other axis's title along the
-  // bottom. The titles are a step brighter than the numbers they head.
+  // bottom.
   Text {
     textFormat: Text.PlainText
     x: 0
@@ -190,13 +207,18 @@ Item {
   // ---- Strips: one per harness, named along the bottom, with a faint rule
   // between neighbours.
   Repeater {
+    id: stripNames
     model: root.strips ? root.spec.strips : []
+    onItemAdded: Qt.callLater(root.measureBaseLines)
+    onItemRemoved: Qt.callLater(root.measureBaseLines)
 
     Item {
       required property var modelData
       required property int index
       readonly property real slot: modelData.w * root.plotWidth
       readonly property real leftEdge: root.plotX + (modelData.x - modelData.w / 2) * root.plotWidth
+      readonly property int lines: stripName.lineCount
+      onLinesChanged: Qt.callLater(root.measureBaseLines)
 
       Rectangle {
         visible: index > 0
@@ -208,6 +230,7 @@ Item {
       }
 
       Text {
+        id: stripName
         textFormat: Text.PlainText
         x: parent.leftEdge + Style.space(2)
         y: root.plotY + root.plotHeight + Style.space(5)
@@ -227,11 +250,16 @@ Item {
 
   // ---- Columns: the top results, tallest first.
   Repeater {
+    id: columnMarks
     model: root.columns ? root.spec.items : []
+    onItemAdded: Qt.callLater(root.measureBaseLines)
+    onItemRemoved: Qt.callLater(root.measureBaseLines)
 
     Item {
       id: column
       required property var modelData
+      readonly property int lines: root.slanted ? 1 : columnName.lineCount
+      onLinesChanged: Qt.callLater(root.measureBaseLines)
       readonly property var row: root.rowAt(modelData.row)
       readonly property bool selected: root.selectedRow === modelData.row
       readonly property real slot: root.plotWidth / root.spec.items.length
@@ -292,6 +320,7 @@ Item {
 
       // The model's name, ending under its column when slanted.
       Text {
+        id: columnName
         textFormat: Text.PlainText
         width: root.slanted ? root.nameLength : parent.width - Style.space(4)
         x: root.slanted ? parent.width / 2 - width : Style.space(2)
@@ -426,27 +455,41 @@ Item {
     }
   }
 
-  // The model that leads each strip, named above its dot.
+  // The model that leads each strip, named above its dot, on a patch of the
+  // surface color so a gridline behind it doesn't run through its letters.
   Repeater {
     model: root.strips ? root.spec.items.filter(function(item) { return item.record }) : []
 
-    Text {
+    Item {
       required property var modelData
       readonly property var strip: root.spec.strips[modelData.strip]
-      readonly property real slot: strip.w * root.plotWidth
-      textFormat: Text.PlainText
       x: root.plotX + (strip.x - strip.w / 2) * root.plotWidth + Style.space(2)
       y: Math.max(root.titleRow, root.valueY(modelData.y) - height - Style.space(6))
       z: 4
-      width: slot - Style.space(4)
-      text: root.rowAt(modelData.row).name
-      color: root.selectedRow === modelData.row ? root.foreground : root.dim
-      font.family: root.fontFamily
-      font.pixelSize: Style.font.caption
-      horizontalAlignment: Text.AlignHCenter
-      wrapMode: Text.Wrap
-      maximumLineCount: 2
-      elide: Text.ElideRight
+      width: strip.w * root.plotWidth - Style.space(4)
+      height: leaderName.height
+
+      Rectangle {
+        anchors.centerIn: parent
+        width: Math.min(parent.width, leaderName.contentWidth + Style.space(4))
+        height: parent.height
+        radius: Style.space(2)
+        color: Util.alpha(root.surface, 0.85)
+      }
+
+      Text {
+        id: leaderName
+        textFormat: Text.PlainText
+        width: parent.width
+        text: root.rowAt(parent.modelData.row).name
+        color: root.selectedRow === parent.modelData.row ? root.foreground : root.dim
+        font.family: root.fontFamily
+        font.pixelSize: Style.font.caption
+        horizontalAlignment: Text.AlignHCenter
+        wrapMode: Text.Wrap
+        maximumLineCount: 2
+        elide: Text.ElideRight
+      }
     }
   }
 }
