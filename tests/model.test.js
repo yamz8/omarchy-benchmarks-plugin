@@ -176,27 +176,35 @@ function history(scores) {
 }
 
 test("a benchmark run in harnesses gets a strip of dots for each harness", () => {
-  const rows = chartRows([
-    { score: 90, harness: "Claude Code" },
-    { score: 85, harness: "Claude Code 2.1.207" },
-    { score: 80, harness: "Terminus-2" },
-    { score: 75, harness: "Terminus 2" },
-    { score: 70, harness: "Codex" },
-    { score: 65, harness: "Rare Agent" },
-    { score: 60, harness: "Other Agent" },
-    { score: 58, harness: "Third Agent" },
-    { score: 55 }
-  ])
+  const specs = [
+    { score: 90, harness: "Claude Code" }, { score: 85, harness: "Claude Code 2.1.207" }, { score: 84, harness: "claude-code" },
+    { score: 80, harness: "Terminus-2" }, { score: 75, harness: "Terminus 2" }, { score: 74, harness: "Terminus 2" },
+    { score: 70, harness: "Codex" }, { score: 69, harness: "Codex" }, { score: 68, harness: "Codex" },
+    { score: 67, harness: "Rarely Used" }, { score: 66, harness: "Rarely Used" },
+    { score: 65, harness: "Fourth" }, { score: 64, harness: "Fourth" }, { score: 63, harness: "Fourth" }
+  ]
+  for (let i = 0; i < 9; i++) specs.push({ score: 50 - i })
+  const rows = chartRows(specs)
   const chart = Model.chart(rows)
   assert.equal(chart.form, "strips")
-  // Spellings and versions of one harness are one strip; the long tail and
-  // the results that name none share the last, which the panel words.
-  assert.deepEqual(chart.strips.map(strip => strip.label), ["Claude Code", "Terminus-2", "Codex", "Other Agent", ""])
-  assert.deepEqual(chart.items.map(item => item.strip), [0, 0, 1, 1, 2, 4, 3, 4, 4])
+  // Spellings and versions of one harness are one strip. Three get a strip:
+  // a harness with two results can't be compared, and the fourth is one too
+  // many. Those and the results naming no harness share the last strip,
+  // which the panel words.
+  assert.deepEqual(chart.strips.map(strip => strip.label), ["Claude Code", "Codex", "Fourth", ""])
+  assert.deepEqual(chart.items.slice(0, 14).map(item => item.strip), [0, 0, 0, 3, 3, 3, 1, 1, 1, 3, 3, 2, 2, 2])
   // Every result is on the graph, and the best of each strip is marked.
   assert.equal(chart.items.length, rows.length)
-  assert.deepEqual(chart.items.filter(item => item.record).map(item => rows[item.row].score), [90, 80, 70, 65, 60])
-  for (const item of chart.items) assert.ok(item.x > 0 && item.x < 1 && item.y >= 0 && item.y <= 1, JSON.stringify(item))
+  assert.deepEqual(chart.items.filter(item => item.record).map(item => rows[item.row].score), [90, 80, 70, 65])
+  // The strips tile the graph; the shared one is the widest, but no more than twice a named one.
+  const widths = chart.strips.map(strip => strip.w)
+  assert.ok(Math.abs(widths.reduce((a, b) => a + b) - 1) < 1e-9)
+  assert.ok(Math.abs(widths[3] - 2 * widths[0]) < 1e-9, JSON.stringify(widths))
+  // And every dot stays inside its own strip.
+  for (const item of chart.items) {
+    const strip = chart.strips[item.strip]
+    assert.ok(Math.abs(item.x - strip.x) < strip.w / 2 && item.y >= 0 && item.y <= 1, JSON.stringify(item))
+  }
 })
 
 test("dots that would land on each other in a strip step aside", () => {
@@ -205,6 +213,19 @@ test("dots that would land on each other in a strip step aside", () => {
   // Three near-equal scores sit side by side; the distant one is back on the centre line.
   assert.equal(new Set(xs.slice(0, 3)).size, 3)
   assert.equal(xs[3], xs[0])
+})
+
+test("a full shared strip spreads its dots across its extra width", () => {
+  // Twenty near-equal scores with no harness beside three small named strips.
+  const specs = ["A", "B", "C"].flatMap(harness => [70, 60, 50, 40, 30].map(score => ({ score, harness })))
+  for (let i = 0; i < 20; i++) specs.push({ score: 80 + i * 0.05 })
+  const chart = Model.chart(chartRows(specs))
+  const rest = chart.strips[3]
+  const xs = chart.items.filter(item => item.strip === 3).map(item => item.x)
+  // More places than a named strip has room for, so none of these twenty share one.
+  const named = chart.strips[0]
+  assert.ok(new Set(xs).size > Math.floor(named.w * 0.84 / 0.024) + 1, new Set(xs).size + " places")
+  assert.ok(Math.max(...xs) - Math.min(...xs) > named.w, "spread " + (Math.max(...xs) - Math.min(...xs)))
 })
 
 test("a harness named on only a few results doesn't make it an agent benchmark", () => {

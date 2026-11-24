@@ -294,12 +294,17 @@ function age(seconds) {
 //   over its name, on an axis that keeps to where the scores are.
 
 var MAX_COLUMNS = 12
-var MAX_STRIPS = 4
+// A harness gets a strip of its own when at least this many results ran in
+// it, and at most this many do; the rest share one strip, which is given up
+// to this many times a named strip's width, since it is usually the fullest.
+var MAX_STRIPS = 3
+var MIN_STRIP_RESULTS = 3
+var REST_MAX_WIDTH = 2
 // Dots in one strip that would land on each other step sideways instead:
 // how close counts as landing (of the value axis) and how far a step is (of
-// the strip's width).
+// the graph's width).
 var DOT_CLEARANCE = 0.04
-var DOT_STEP = 0.11
+var DOT_STEP = 0.024
 // The share of results that must name a harness for it to count as part of
 // the benchmark, and the dated share and reach a history needs.
 var HARNESS_SHARE = 0.4
@@ -315,8 +320,8 @@ function harnessKey(harness) {
   return String(harness || "").replace(/\s+v?\d+(\.\d+)+$/i, "").toLowerCase().replace(/[^a-z0-9]+/g, "")
 }
 
-// The harnesses most results ran in, or none when harness isn't part of
-// this benchmark.
+// The harnesses enough results ran in to compare, most used first, or none
+// when harness isn't part of this benchmark.
 function harnessGroups(rows) {
   var byKey = {}
   var named = 0
@@ -329,7 +334,7 @@ function harnessGroups(rows) {
   }
   if (rows.length === 0 || named / rows.length < HARNESS_SHARE) return []
   var groups = []
-  for (var k in byKey) groups.push(byKey[k])
+  for (var k in byKey) if (byKey[k].count >= MIN_STRIP_RESULTS) groups.push(byKey[k])
   groups.sort(function(a, b) { return b.count - a.count || (a.label < b.label ? -1 : a.label > b.label ? 1 : 0) })
   return groups.slice(0, MAX_STRIPS)
 }
@@ -378,32 +383,50 @@ function columnsChart(rows, fromZero) {
 
 // A strip for each of the harnesses most results ran in, and one for the
 // rest (named "" here; the panel words it). The best result of each strip is
-// its record.
+// its record. A strip has a centre `x` and a width `w`, as shares of the
+// graph's width.
 function stripsChart(rows, groups) {
   var keys = groups.map(function(group) { return group.key })
   var scores = rows.map(function(row) { return row.score })
   var axis = valueAxis(Math.min.apply(null, scores), Math.max.apply(null, scores), false)
 
   var assigned = rows.map(function(row) { return keys.indexOf(harnessKey(row.harness)) })
-  var rest = assigned.some(function(strip) { return strip < 0 })
-  var count = groups.length + (rest ? 1 : 0)
-  var strips = groups.map(function(group, index) { return { label: group.label, x: (index + 0.5) / count } })
-  if (rest) strips.push({ label: "", x: (count - 0.5) / count })
+  var restCount = assigned.filter(function(strip) { return strip < 0 }).length
+
+  // Named strips are all one width; the rest's grows with how full it is.
+  var weights = groups.map(function() { return 1 })
+  if (restCount > 0) {
+    var average = (rows.length - restCount) / groups.length
+    weights.push(Math.max(1, Math.min(REST_MAX_WIDTH, restCount / average)))
+  }
+  var total = weights.reduce(function(sum, weight) { return sum + weight }, 0)
+  var strips = []
+  var left = 0
+  for (var k = 0; k < weights.length; k++) {
+    var w = weights[k] / total
+    strips.push({ label: k < groups.length ? groups[k].label : "", x: left + w / 2, w: w })
+    left += w
+  }
 
   var placed = strips.map(function() { return [] })
-  var slots = [0, 1, -1, 2, -2, 3, -3]
   var items = []
   var order = []
   for (var i = 0; i < rows.length; i++) {
-    var strip = assigned[i] < 0 ? count - 1 : assigned[i]
+    var strip = assigned[i] < 0 ? strips.length - 1 : assigned[i]
     var y = (rows[i].score - axis.min) / (axis.max - axis.min)
     var taken = {}
     for (var j = 0; j < placed[strip].length; j++)
       if (Math.abs(placed[strip][j].y - y) < DOT_CLEARANCE) taken[placed[strip][j].slot] = true
-    var free = slots.filter(function(slot) { return !taken[slot] })
-    var slot = free.length > 0 ? free[0] : 0
+    // Step out from the centre, one side then the other, as far as the strip
+    // is wide; past that the dot overlaps at the centre.
+    var reach = Math.max(0, Math.floor(strips[strip].w * 0.42 / DOT_STEP))
+    var slot = 0
+    for (var step = 0; step <= 2 * reach; step++) {
+      var candidate = step === 0 ? 0 : (step % 2 === 1 ? (step + 1) / 2 : -step / 2)
+      if (!taken[candidate]) { slot = candidate; break }
+    }
     placed[strip].push({ y: y, slot: slot })
-    items.push({ row: i, x: strips[strip].x + slot * DOT_STEP / count, y: y, strip: strip, record: placed[strip].length === 1 })
+    items.push({ row: i, x: strips[strip].x + slot * DOT_STEP, y: y, strip: strip, record: placed[strip].length === 1 })
     order.push(i)
   }
   return { form: "strips", axis: axis, items: items, order: order, total: rows.length, strips: strips, steps: [], xTicks: [] }

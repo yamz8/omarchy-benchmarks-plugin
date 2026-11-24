@@ -549,6 +549,9 @@ Panel {
                         font.family: root.fontFamily
                         font.pixelSize: Style.font.body
                         elide: Text.ElideRight
+                        // Said outright so a right-to-left layout mirrors it;
+                        // left to itself, a Latin name stays on the left.
+                        horizontalAlignment: Text.AlignLeft
                       }
 
                       Text {
@@ -560,6 +563,7 @@ Panel {
                         font.family: root.fontFamily
                         font.pixelSize: Style.font.caption
                         elide: Text.ElideRight
+                        horizontalAlignment: Text.AlignLeft
                       }
                     }
 

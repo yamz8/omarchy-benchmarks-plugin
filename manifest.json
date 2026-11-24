@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "yamz8.benchmarks",
   "name": "Benchmarks",
-  "version": "0.5.1",
+  "version": "0.6.0",
   "author": "yamz8",
   "license": "MIT",
   "description": "Model benchmark scores from models.dev, one benchmark at a time.",

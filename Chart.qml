@@ -59,15 +59,14 @@ Item {
     return Math.ceil(widest * glyph.advanceWidth) + Style.space(8)
   }
   // With a few wide columns a name sits flat under its column, on up to two
-  // lines. With many it is slanted steeply, which keeps it long enough to
-  // show the version at its end without the first one running off the left
-  // edge.
+  // lines. With many it is slanted steeply, which leaves room for a long
+  // name without the first one running off the left edge.
   readonly property bool slanted: columns && plotWidth / Math.max(1, spec.items.length) < Style.space(70)
-  readonly property real nameLength: Style.space(108)
+  readonly property real nameLength: Style.space(124)
   readonly property real plotX: gutter
   readonly property real plotY: (strips ? 2 : 1) * lineHeight + Style.space(4)
   readonly property real plotWidth: Math.max(1, width - gutter - Style.space(6))
-  readonly property real plotHeight: Math.max(1, height - plotY - (columns && slanted ? nameLength * 0.87 + lineHeight / 2 : (columns || strips ? 2 : 1) * lineHeight + Style.space(8)))
+  readonly property real plotHeight: Math.max(1, height - plotY - (columns && slanted ? nameLength * 0.92 + lineHeight / 2 : (columns || strips ? 2 : 1) * lineHeight + Style.space(8)))
 
   // A model you use is drawn larger than the rest as well as in another
   // shape and color: in a theme whose accent is close to its text color,
@@ -133,11 +132,12 @@ Item {
     Item {
       required property var modelData
       required property int index
-      readonly property real slot: root.plotWidth / root.spec.strips.length
+      readonly property real slot: modelData.w * root.plotWidth
+      readonly property real leftEdge: root.plotX + (modelData.x - modelData.w / 2) * root.plotWidth
 
       Rectangle {
         visible: index > 0
-        x: Math.round(root.plotX + index * parent.slot)
+        x: Math.round(parent.leftEdge)
         y: root.plotY
         width: 1
         height: root.plotHeight
@@ -146,7 +146,7 @@ Item {
 
       Text {
         textFormat: Text.PlainText
-        x: root.plotX + index * parent.slot + Style.space(2)
+        x: parent.leftEdge + Style.space(2)
         y: root.plotY + root.plotHeight + Style.space(5)
         width: parent.slot - Style.space(4)
         text: modelData.label !== "" ? modelData.label : root.otherLabel
@@ -234,7 +234,7 @@ Item {
         x: root.slanted ? parent.width / 2 - width : Style.space(2)
         y: root.plotY + root.plotHeight + Style.space(root.slanted ? 4 : 5)
         transformOrigin: Item.TopRight
-        rotation: root.slanted ? -60 : 0
+        rotation: root.slanted ? -66 : 0
         wrapMode: root.slanted ? Text.NoWrap : Text.Wrap
         maximumLineCount: root.slanted ? 1 : 2
         text: column.row.name
@@ -245,7 +245,9 @@ Item {
         font.pixelSize: Style.font.caption
         font.bold: column.row.mine
         horizontalAlignment: root.slanted ? Text.AlignRight : Text.AlignHCenter
-        elide: Text.ElideRight
+        // A name too long even for the slant loses its middle, not the
+        // version at its end, which is what tells two models apart.
+        elide: root.slanted ? Text.ElideMiddle : Text.ElideRight
       }
 
       MouseArea {
@@ -367,9 +369,10 @@ Item {
 
     Text {
       required property var modelData
-      readonly property real slot: root.plotWidth / root.spec.strips.length
+      readonly property var strip: root.spec.strips[modelData.strip]
+      readonly property real slot: strip.w * root.plotWidth
       textFormat: Text.PlainText
-      x: root.plotX + modelData.strip * slot + Style.space(2)
+      x: root.plotX + (strip.x - strip.w / 2) * root.plotWidth + Style.space(2)
       y: Math.max(0, root.valueY(modelData.y) - height - Style.space(6))
       z: 4
       width: slot - Style.space(4)

@@ -43,7 +43,7 @@ The models you use are the ones in the agents panel's usage records (`~/.local/s
 The panel opens on a graph, and the graph's form follows how the benchmark is built. That is read off the benchmark's data, not its name:
 
 - **Score over time.** Where each model has one score and the results reach back at least six months, every result is a dot at its model's release date, with a line along the best score so far and the record setters named.
-- **A strip for each harness.** On an agent benchmark, where most results name the harness the model ran in, every result is a dot in its harness's strip (the four most used, then Other), with the leader of each strip named. Scores compare fairly only within one harness, so that is how they are laid out.
+- **A strip for each harness.** On an agent benchmark, where most results name the harness the model ran in, every result is a dot in its harness's strip, with the leader of each strip named. Up to three harnesses get a strip of their own, each with at least three results; everything else shares a wider one named Other. Scores compare fairly only within one harness, so that is how they are laid out.
 - **Columns.** Where there is too little history for a line and no harness to split on, the top twelve results as columns measured from zero. Scores that are ratings rather than shares of a whole (Elo, in the thousands) are dots instead, since columns from zero would all look the same height.
 
 Up and Down step through the results on the graph, best first, and the line under it says which one the cursor is on and what its score was reported with. Enter opens its source, as in the list.
