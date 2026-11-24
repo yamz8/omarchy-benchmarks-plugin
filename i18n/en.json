@@ -31,7 +31,7 @@
   "view.list": "Show as a list",
   "view.graph": "Show as a graph",
   "chart.columns": "Top %1 of %2 results",
-  "chart.dated": "%1 of %2 results · the rest have no date",
+  "chart.dated": "Model release date · %1 of %2 results have one",
   "chart.scoreAs": "%1 %2",
   "axis.score": "Score",
   "axis.time": "Model release date",

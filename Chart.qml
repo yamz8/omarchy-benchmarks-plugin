@@ -10,9 +10,9 @@ import "Model.js" as Model
 // a strip of dots for each harness on an agent benchmark, or columns for the
 // top results. Each graph says what it shows: a title for the value axis at
 // the top left and, where the labels along the bottom don't speak for
-// themselves, one for that axis too. The panel owns the selection, so the
-// keyboard, the pointer and the line under the graph agree on which result
-// is meant.
+// themselves, one for that axis too. The result under the cursor is
+// described on a card beside its mark. The panel owns the selection, so the
+// keyboard and the pointer agree on which result is meant.
 Item {
   id: root
 
@@ -27,6 +27,10 @@ Item {
   property string valueTitle: ""
   property string baseTitle: ""
   property string bestLabel: ""
+  // The result under the cursor, worded by the panel: its name and score,
+  // and what the score was reported with.
+  property string tipTitle: ""
+  property string tipDetail: ""
   // Titles are in the text color and the numbers under them in the dim one,
   // as the benchmark's name and the line under it are. A tint of the text
   // color would come out fainter than the numbers in a light theme.
@@ -34,6 +38,8 @@ Item {
 
   signal picked(int row)
   signal activated(int row)
+  // The pointer has left the graph.
+  signal pointerLeft()
 
   readonly property bool columns: spec !== null && spec.form === "columns"
   readonly property bool time: spec !== null && spec.form === "time"
@@ -105,6 +111,10 @@ Item {
 
   function valueY(fraction) {
     return plotY + plotHeight * (1 - fraction)
+  }
+
+  HoverHandler {
+    onHoveredChanged: if (!hovered) root.pointerLeft()
   }
 
   // ---- What the graph shows: the value axis's title over its numbers, a
@@ -435,6 +445,8 @@ Item {
 
     Rectangle {
       required property var modelData
+      // The card names the result under the cursor, so its own name steps aside.
+      visible: root.selectedRow !== modelData.row
       x: root.plotX + modelData.x - Style.space(2)
       y: root.plotY + modelData.y
       z: 5
@@ -463,6 +475,7 @@ Item {
     Item {
       required property var modelData
       readonly property var strip: root.spec.strips[modelData.strip]
+      visible: root.selectedRow !== modelData.row
       x: root.plotX + (strip.x - strip.w / 2) * root.plotWidth + Style.space(2)
       y: Math.max(root.titleRow, root.valueY(modelData.y) - height - Style.space(6))
       z: 4
@@ -488,6 +501,78 @@ Item {
         horizontalAlignment: Text.AlignHCenter
         wrapMode: Text.Wrap
         maximumLineCount: 2
+        elide: Text.ElideRight
+      }
+    }
+  }
+
+  // ---- The result under the cursor, on a card beside its mark: above it
+  // where there is room, below it otherwise, and never off the graph's
+  // sides. The card takes no pointer events, so the marks under it still do.
+  readonly property var selectedItem: {
+    if (spec === null || selectedRow < 0) return null
+    for (var i = 0; i < spec.items.length; i++) if (spec.items[i].row === selectedRow) return spec.items[i]
+    return null
+  }
+
+  BorderSurface {
+    id: tip
+
+    readonly property var mark: root.selectedItem
+    readonly property real markX: mark ? root.plotX + mark.x * root.plotWidth : 0
+    readonly property real markY: mark ? root.valueY(mark.y) : 0
+    // A column carries its score over its top, which the card stays clear of.
+    readonly property real clearAbove: root.columns ? root.lineHeight + Style.space(12) : Style.space(12)
+    // Below, it also stays clear of the pointer's arrow.
+    readonly property real clearBelow: Style.space(22)
+    readonly property bool above: markY - clearAbove - height >= 0
+    readonly property var edge: Border.localOrSurfaceSpec("tooltip", "border", Commons.Color.tooltip.border, Commons.Color.tooltip.border, Style.normalBorderWidth)
+
+    visible: mark !== null && root.tipTitle !== ""
+    z: 10
+    width: Math.min(root.width, Math.max(tipName.implicitWidth, Math.min(tipMore.implicitWidth, Style.space(250))) + contentLeftInset + contentRightInset)
+    height: tipText.implicitHeight + contentTopInset + contentBottomInset
+    x: Math.max(0, Math.min(root.width - width, markX - width / 2))
+    y: above ? markY - clearAbove - height : Math.min(root.height - height, markY + clearBelow)
+    color: Commons.Color.tooltip.background
+    borderSpec: edge
+    radius: Style.cornerRadius
+    leftPadding: Style.spacing.controlPaddingX
+    rightPadding: Style.spacing.controlPaddingX
+    topPadding: Style.spacing.controlPaddingY
+    bottomPadding: Style.spacing.controlPaddingY
+
+    Column {
+      id: tipText
+      x: tip.contentLeftInset
+      y: tip.contentTopInset
+      width: tip.width - tip.contentLeftInset - tip.contentRightInset
+      spacing: Style.space(2)
+
+      Text {
+        id: tipName
+        textFormat: Text.PlainText
+        width: parent.width
+        text: root.tipTitle
+        color: Commons.Color.tooltip.text
+        font.family: root.fontFamily
+        font.pixelSize: Style.font.caption
+        font.bold: true
+        elide: Text.ElideRight
+      }
+
+      Text {
+        id: tipMore
+        textFormat: Text.PlainText
+        visible: text !== ""
+        width: parent.width
+        text: root.tipDetail
+        color: Commons.Color.tooltip.text
+        opacity: 0.75
+        font.family: root.fontFamily
+        font.pixelSize: Style.font.caption
+        wrapMode: Text.Wrap
+        maximumLineCount: 4
         elide: Text.ElideRight
       }
     }

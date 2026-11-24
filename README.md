@@ -53,7 +53,7 @@ Every graph names its axes, and no more than that:
 
 On a graph over time, the line is the best score so far, as the key beside the title says. A diamond is a model you use.
 
-Up and Down step through the results on the graph, best first, and the line under it says which one the cursor is on and what its score was reported with, including its own metric where the benchmark's results name more than one. Enter opens its source, as in the list.
+Point at a result, or step through them best first with Up and Down, and a card beside its mark says which one it is and what its score was reported with, including its own metric where the benchmark's results name more than one. Enter or a click opens its source, as in the list.
 
 V switches to the list, which has every result with its details, for as long as the shell runs. To open on the list every time:
 

@@ -70,23 +70,16 @@ Panel {
   readonly property var chart: Model.chart(rows)
   readonly property bool chartShown: graphView && chart.form !== ""
 
-  // Under the graph: with a result under the cursor, which one it is and
-  // what its score was reported with. Otherwise it stays empty, unless the
-  // graph had to leave results out for want of a date.
-  readonly property string footerText: {
-    if (chart.form === "") return ""
-    if (cursorActive && selectedIndex < rows.length) {
-      var row = rows[selectedIndex]
-      // Where the results don't all name one metric, the score says its own.
-      var score = Commons.I18n.formatNumber(row.score, row.decimals)
-      var parts = [row.name, chart.metrics.length > 1 && row.metric !== "" ? strings.t("chart.scoreAs").arg(score).arg(row.metric) : score]
-      var summary = rowSummary(row)
-      if (summary !== "") parts.push(summary)
-      return parts.join(" · ")
-    }
-    if (chart.form !== "time" || chart.items.length >= chart.total) return ""
-    return strings.t("chart.dated").arg(Commons.I18n.formatNumber(chart.items.length)).arg(Commons.I18n.formatNumber(chart.total))
+  // The result under the cursor, as the card beside its mark words it: which
+  // one it is and its score, then what the score was reported with.
+  readonly property var cursorRow: chartShown && cursorActive && selectedIndex < rows.length ? rows[selectedIndex] : null
+  readonly property string tipTitle: {
+    if (cursorRow === null) return ""
+    // Where the results don't all name one metric, the score says its own.
+    var score = Commons.I18n.formatNumber(cursorRow.score, cursorRow.decimals)
+    return cursorRow.name + " · " + (chart.metrics.length > 1 && cursorRow.metric !== "" ? strings.t("chart.scoreAs").arg(score).arg(cursorRow.metric) : score)
   }
+  readonly property string tipDetail: cursorRow !== null ? rowSummary(cursorRow) : ""
 
   // The value axis's title: the metric in its sources' words, or just "Score"
   // where they name none.
@@ -98,6 +91,7 @@ Panel {
   // The other axis's: dates and harnesses need saying, and so does a graph
   // that shows only the top results. Models named under their columns don't.
   readonly property string baseTitle: {
+    if (chart.form === "time" && chart.items.length < chart.total) return strings.t("chart.dated").arg(Commons.I18n.formatNumber(chart.items.length)).arg(Commons.I18n.formatNumber(chart.total))
     if (chart.form === "time") return strings.t("axis.time")
     if (chart.form === "strips") return strings.t("axis.strips")
     if (chart.form === "columns" && chart.items.length < chart.total) return strings.t("chart.columns").arg(Commons.I18n.formatNumber(chart.items.length)).arg(Commons.I18n.formatNumber(chart.total))
@@ -319,7 +313,7 @@ Panel {
     open: root.opened
     focusTarget: keyCatcher
     contentWidth: panel.fittedContentWidth(Style.space(440))
-    contentHeight: panel.fittedContentHeight(fixedContent.implicitHeight + (root.chartShown ? chartView.implicitHeight + Style.space(8) : listContent.implicitHeight) + Style.space(12) + (footer.visible ? footer.implicitHeight + Style.space(12) : 0), Style.space(620))
+    contentHeight: panel.fittedContentHeight(fixedContent.implicitHeight + (root.chartShown ? chartView.implicitHeight + Style.space(8) : listContent.implicitHeight) + Style.space(12), Style.space(620))
 
     PanelKeyCatcher {
       id: keyCatcher
@@ -473,6 +467,9 @@ Panel {
           valueTitle: root.valueTitle
           baseTitle: root.baseTitle
           bestLabel: strings.t("key.best")
+          tipTitle: root.tipTitle
+          tipDetail: root.tipDetail
+          onPointerLeft: root.cursorActive = false
           onPicked: function(row) { root.selectFromChart(row) }
           onActivated: function(row) { root.openSource(root.rows[row]) }
         }
@@ -602,19 +599,6 @@ Panel {
               }
             }
           }
-        }
-
-        Text {
-          id: footer
-          textFormat: Text.PlainText
-          visible: root.chartShown
-          Layout.fillWidth: true
-          text: root.footerText
-          color: root.dim
-          font.family: root.fontFamily
-          font.pixelSize: Style.font.caption
-          horizontalAlignment: Text.AlignHCenter
-          elide: Text.ElideRight
         }
       }
     }
